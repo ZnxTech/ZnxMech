@@ -334,16 +334,13 @@ export class Commend {
 
 	static checkPermissions(commend, event) {
 		if (commend.rank > User.getRank(event.userId)) {
-			console.log(User.getCachedName(event.userId), ` is under ranked`);
 			return false; // user not authorized to use commend
 		}
 		if (commend.isCooldown(event.roomId, event.userId)) {
-			console.log(User.getCachedName(event.userId), ` is under cooldown`);
 			return false; // commend under cooldown
 		} else if (commend.cooldown > 0) {
 			commend.setCooldown(event.roomId, event.userId);
 		}
-		console.log(User.getCachedName(event.userId), ` is permitted`);
 		return true;
 	}
 
