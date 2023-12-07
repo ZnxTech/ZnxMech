@@ -8,7 +8,7 @@
  */
 
 /** Imports: */
-import CommendManager, * as Commend from './commends.js';
+import CommandManager, * as Command from './commands.js';
 import Twitch from '../clients/twitch.js';
 
 /**
@@ -95,7 +95,7 @@ export default class UserManager {
 	/**
 	 * Sets a user's rank.
 	 * @param {number} id - The user's id.
-	 * @param {Commend.Rank} rank - The rank to set the user to.
+	 * @param {Command.Rank} rank - The rank to set the user to.
 	 * @returns {Promise<void>}
 	 * @static
 	 * @method
@@ -184,12 +184,12 @@ export default class UserManager {
 	/**
 	 * Gets a user's rank.
 	 * @param {number} id - The user's id.
-	 * @returns {Commend.Rank} The user's id.
+	 * @returns {Command.Rank} The user's id.
 	 * @static
 	 * @method
 	 */
 	static getRank(id) {
-		return UserManager.#users.get(id)?.rank ?? Commend.Rank.DEFAULT;
+		return UserManager.#users.get(id)?.rank ?? Command.Rank.DEFAULT;
 	}
 
 	/**
@@ -225,9 +225,9 @@ export class User {
 		this.name = name;
 
 		/**
-		 * @type {Commend.Rank} rank - The user's rank.
+		 * @type {Command.Rank} rank - The user's rank.
 		 */
-		this.rank = Commend.Rank.DEFAULT;
+		this.rank = Command.Rank.DEFAULT;
 
 		/**
 		 * @type {number} points - The user's points count.

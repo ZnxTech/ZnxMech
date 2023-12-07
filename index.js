@@ -13,14 +13,14 @@ import Twitch from './clients/twitch.js';
 
 import ChannelManager from './managers/channels.js';
 import UserManager from './managers/users.js';
-import CommendManager, { Rank } from './managers/commends.js';
+import CommandManager, { Rank } from './managers/commands.js';
 
 /**
- * Commend definitions:
+ * Command definitions:
  * --------------------
  */
 
-CommendManager.create(
+CommandManager.create(
 	{
 		triggers: ['hey', 'hello', 'hi'],
 		cooldown: 10 * 1000
@@ -30,7 +30,7 @@ CommendManager.create(
 	}
 );
 
-CommendManager.create(
+CommandManager.create(
 	{
 		triggers: ['source', 'code', 'repo', 'git'],
 		cooldown: 10 * 1000
@@ -40,7 +40,7 @@ CommendManager.create(
 	}
 );
 
-CommendManager.create(
+CommandManager.create(
 	{
 		triggers: ['join'],
 		rank: Rank.ADMIN,
@@ -61,7 +61,7 @@ CommendManager.create(
 	}
 );
 
-CommendManager.create(
+CommandManager.create(
 	{
 		triggers: ['part', 'leave'],
 		rank: Rank.ADMIN,

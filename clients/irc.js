@@ -10,7 +10,7 @@
 /** Imports: */
 import 'dotenv/config';
 import WebSocket, * as ws from 'ws';
-import CommendManager, * as Commend from '../managers/commends.js';
+import CommandManager, * as Command from '../managers/commands.js';
 import ChannelManager from '../managers/channels.js';
 
 /**
@@ -190,7 +190,7 @@ export default class IrcClient {
 	 */
 	static async onMessage(event) {
 		console.log(event.toString());
-		CommendManager.process(event);
+		CommandManager.process(event);
 	}
 
 	/**
@@ -869,7 +869,7 @@ export class PingEvent extends Event {
 		 * The IRC source.
 		 * @type {string}
 		 */
-		this.source = args[0]; // source appears after commend, bruh
+		this.source = args[0]; // source appears after command, bruh
 	}
 }
 

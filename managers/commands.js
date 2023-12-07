@@ -2,8 +2,8 @@
 
 /**
  * Contains a static manager class and data-struct classes
- * for ease of detacting and maintaining commends.
- * @module CommendManager
+ * for ease of detacting and maintaining commands.
+ * @module CommandManager
  * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
  */
 
@@ -13,40 +13,40 @@ import IrcClient, * as Irc from '../clients/irc.js';
 import UserManager, * as User from './users.js';
 
 /**
- * A manager class that manages all commend data and trigger conditons.
+ * A manager class that manages all command data and trigger conditons.
  * @default
  */
-export default class CommendManager {
+export default class CommandManager {
 	/**
-	 * The list of all commend data-struct instances.
-	 * @type {Commend[]}
+	 * The list of all command data-struct instances.
+	 * @type {Command[]}
 	 * @static
 	 */
-	static #commends = [];
+	static #commands = [];
 
 	/**
-	 * @typedef {object} CommendSettings
-	 * @property {string[]} triggers - The word/s to look for to cause the commend to trigger.
-	 * @property {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the commend.
-	 * @property {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the commend again.
+	 * @typedef {object} CommandSettings
+	 * @property {string[]} triggers - The word/s to look for to cause the command to trigger.
+	 * @property {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the command.
+	 * @property {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the command again.
 	 */
 
 	/**
-	 * A function that adds the function/method the the manager's commends array.
-	 * @param {CommendSettings} settings - The commend settings
-	 * @param {function(Irc.MessageEvent): void} callback - The function to callback when the commend is triggered.
+	 * A function that adds the function/method the the manager's commands array.
+	 * @param {CommandSettings} settings - The command settings
+	 * @param {function(Irc.MessageEvent): void} callback - The function to callback when the command is triggered.
 	 * @returns {void}
 	 * @static
 	 * @method
 	 */
 	static create(settings, callback) {
-		let commend = new Commend(callback, settings.triggers, settings.rank, settings.cooldown);
-		CommendManager.#commends.push(commend);
+		let command = new Command(callback, settings.triggers, settings.rank, settings.cooldown);
+		CommandManager.#commands.push(command);
 	}
 
 	/**
-	 * Processes an irc-event to check if it meets commends conditions.
-	 * if it does, call the callback function for that commend.
+	 * Processes an irc-event to check if it meets commands conditions.
+	 * if it does, call the callback function for that command.
 	 * @param {Irc.MessageEvent} event - The irc-event to process.
 	 * @returns {Promise<void>}
 	 * @static
@@ -54,18 +54,18 @@ export default class CommendManager {
 	 */
 	static async process(event) {
 		console.log('processing: ', event.message);
-		for (const commend of CommendManager.#commends) {
-			console.log('checking: ', commend.triggers[0], commend.isTriggered(event), commend.isPermitted(event));
-			if (commend.isTriggered(event) && commend.isPermitted(event)) {
+		for (const command of CommandManager.#commands) {
+			console.log('checking: ', command.triggers[0], command.isTriggered(event), command.isPermitted(event));
+			if (command.isTriggered(event) && command.isPermitted(event)) {
 				const response = await Twitch.getStreams({ id: event.roomId });
 				if (!response?.data.data[0]) {
 					return; // Channel is online, quit function.
 				}
-				if (commend.cooldown > 0) {
-					commend.setCooldown(event.roomId, event.userId); // Set a cooldown.
+				if (command.cooldown > 0) {
+					command.setCooldown(event.roomId, event.userId); // Set a cooldown.
 				}
-				commend.callback(event);
-				return; // Stop looping over commends array.
+				command.callback(event);
+				return; // Stop looping over commands array.
 			}
 		}
 	}
@@ -107,11 +107,11 @@ export default class CommendManager {
 }
 
 /**
- * Enum representing commend ranks values:
+ * Enum representing command ranks values:
  *
  *     BANNED:  -1 // The user is banned from using the bot.
  *     DEFAULT:  0 // The default rank given to users.
- *     TRUSTED: +1 // The user is responsible and wont spam annoying/abusive commends.
+ *     TRUSTED: +1 // The user is responsible and wont spam annoying/abusive commands.
  *     ADMIN:   +2 // The user has control over the bot.
  *     OWNER:   +3 // The user is the owner of the bot and has full control over it.
  *
@@ -126,34 +126,34 @@ export const Rank = {
 };
 
 /**
- * @classdesc A commend data-struct class with some functionalities.
+ * @classdesc A command data-struct class with some functionalities.
  */
-export class Commend {
+export class Command {
 	/**
-	 * @param {function(Irc.MessageEvent): void} callback - The function to callback when the commend is triggered.
-	 * @param {string[]} triggers - The word/s to look for to cause the commend to trigger.
-	 * @param {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the commend.
-	 * @param {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the commend again.
+	 * @param {function(Irc.MessageEvent): void} callback - The function to callback when the command is triggered.
+	 * @param {string[]} triggers - The word/s to look for to cause the command to trigger.
+	 * @param {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the command.
+	 * @param {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the command again.
 	 * @constructor
 	 */
 	constructor(callback, triggers, rank = Rank.DEFAULT, cooldown = 0) {
 		/**
-		 * @type {function(Irc.MessageEvent): void} callback - The function to callback when the commend is triggered.
+		 * @type {function(Irc.MessageEvent): void} callback - The function to callback when the command is triggered.
 		 */
 		this.callback = callback;
 
 		/**
-		 * @type {string[]} triggers - The name/s to look for to cause the commend to trigger.
+		 * @type {string[]} triggers - The name/s to look for to cause the command to trigger.
 		 */
 		this.triggers = triggers;
 
 		/**
-		 * @type {Rank} rank - The rank value that is required to call the commend.
+		 * @type {Rank} rank - The rank value that is required to call the command.
 		 */
 		this.rank = rank;
 
 		/**
-		 * @type {number} cooldown - The time in miliseconds that the user needs to wait until they can call the commend again.
+		 * @type {number} cooldown - The time in miliseconds that the user needs to wait until they can call the command again.
 		 */
 		this.cooldown = cooldown;
 
@@ -164,14 +164,14 @@ export class Commend {
 	}
 
 	/**
-	 * Returns a boolean representing whether or not the user is allowed to use the commend.
+	 * Returns a boolean representing whether or not the user is allowed to use the command.
 	 * @param {Irc.MessageEvent} event - The event to check permissions on.
 	 * @returns {boolean} Permission state boolean.
 	 * @method
 	 */
 	isPermitted(event) {
 		if (this.rank > UserManager.getRank(event.userId)) {
-			return false; // User not authorized to use commend.
+			return false; // User not authorized to use command.
 		}
 		if (this.isCooldown(event.roomId, event.userId)) {
 			return false; // User is under cooldown.
@@ -180,7 +180,7 @@ export class Commend {
 	}
 
 	/**
-	 * Returns a boolean representing whether or not the event message contains one of the commend's triggers.
+	 * Returns a boolean representing whether or not the event message contains one of the command's triggers.
 	 * @param {Irc.MessageEvent} event -The event to check triggers on.
 	 * @returns {boolean} Containing state boolean.
 	 * @method
