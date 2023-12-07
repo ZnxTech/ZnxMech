@@ -55,7 +55,6 @@ export default class CommandManager {
 	static async process(event) {
 		console.log('processing: ', event.message);
 		for (const command of CommandManager.#commands) {
-			console.log('checking: ', command.triggers[0], command.isTriggered(event), command.isPermitted(event));
 			if (command.isTriggered(event) && command.isPermitted(event)) {
 				const response = await Twitch.getStreams({ id: event.roomId });
 				if (!response?.data.data[0]) {
