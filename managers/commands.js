@@ -4,13 +4,13 @@
  * Contains a static manager class and data-struct classes
  * for ease of detacting and maintaining commands.
  * @module CommandManager
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 /** Imports: */
 import Twitch from '../clients/twitch.js';
-import IrcClient, * as Irc from '../clients/irc.js';
-import UserManager, * as User from './users.js';
+import * as Irc from '../clients/irc.js';
+import UserManager from './users.js';
 
 /**
  * A manager class that manages all command data and trigger conditons.
@@ -53,7 +53,6 @@ export default class CommandManager {
 	 * @method
 	 */
 	static async process(event) {
-		console.log('processing: ', event.message);
 		for (const command of CommandManager.#commands) {
 			if (command.isTriggered(event) && command.isPermitted(event)) {
 				const response = await Twitch.getStreams({ id: event.roomId });

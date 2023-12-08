@@ -3,7 +3,7 @@
 /**
  * Contains a static client class, wrapper for the Twitch API.
  * @module Twitch
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 /** Imports: */

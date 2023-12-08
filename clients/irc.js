@@ -4,13 +4,13 @@
  * Contains a static manager class and data-struct classes
  * for maintaining a twitch irc connection.
  * @module IrcClient
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 /** Imports: */
 import 'dotenv/config';
-import WebSocket, * as ws from 'ws';
-import CommandManager, * as Command from '../managers/commands.js';
+import WebSocket from 'ws';
+import CommandManager from '../managers/commands.js';
 import ChannelManager from '../managers/channels.js';
 
 /**
@@ -35,7 +35,7 @@ export default class IrcClient {
 	}
 
 	/**
-	 * Creates and connects a websocket to the url provided, returns on websocket.
+	 * Creates and connects a websocket to the url provided, returns websocket on open.
 	 * @param {string} url - The url for the websocket to connect to.
 	 * @returns {Promise<WebSocket>} The connected websocket.
 	 * @static

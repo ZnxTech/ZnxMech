@@ -4,7 +4,7 @@
  * Contains a static manager class and a data-struct class
  * for ease of detacting and maintaining channels.
  * @module ChannelManager
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 /** Imports: */

@@ -2,7 +2,7 @@
 
 /**
  * Main.
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 /** Imports: */
@@ -47,14 +47,11 @@ CommandManager.create(
 		cooldown: 0
 	},
 	async (event) => {
-		console.log('triggered join');
 		const name = event.message.split(' ')[1]?.toLowerCase();
 		const response = await Twitch.getUsers({ login: name });
-		console.log(response);
 		if (response) {
 			const id = response.data.data[0].id;
 			await ChannelManager.joinChannel(id, name);
-			IrcClient.sendMessage(name, '/me joined.');
 		} else {
 			IrcClient.sendMessage(event.channel, '/me invalid channel.');
 		}
@@ -68,12 +65,10 @@ CommandManager.create(
 		cooldown: 0
 	},
 	async (event) => {
-		console.log('triggered part');
 		const name = event.message.split(' ')[1]?.toLowerCase();
 		const response = await Twitch.getUsers({ login: name });
 		if (response) {
 			const id = response.data.data[0].id;
-			IrcClient.sendMessage(name, '/me left.');
 			ChannelManager.partChannel(id);
 		} else {
 			IrcClient.sendMessage(event.channel, '/me invalid channel.');

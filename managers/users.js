@@ -4,11 +4,11 @@
  * Contains a static manager class and a data-struct class
  * for ease of detacting and maintaining users.
  * @module UserManager
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 /** Imports: */
-import CommandManager, * as Command from './commands.js';
+import * as Command from './commands.js';
 import Twitch from '../clients/twitch.js';
 
 /**

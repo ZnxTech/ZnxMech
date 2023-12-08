@@ -3,7 +3,7 @@
 /**
  * @deprecated Sub-Event requires a user token to use, therefor I will not use it lol.
  * @module IrcClient
- * @author Daniel "Znx" Levi <LeviDaniel2610@gmail.com>
+ * @author Daniel "Znx" Levi
  */
 
 export class EventSub {
