@@ -11,7 +11,7 @@
 import 'dotenv/config';
 import WebSocket from 'ws';
 import CommandManager from '../managers/commands.js';
-import ChannelManager from '../managers/channels.js';
+import Database, { User, Channel } from '../database/database.js';
 
 /**
  *
@@ -32,6 +32,10 @@ export default class IrcClient {
 	 */
 	static async init() {
 		IrcClient.#socket = await IrcClient.connect('wss://irc-ws.chat.twitch.tv:443');
+		const channels = await Channel.findAll({ where: { isConnected: true } });
+		for (const channel of channels) {
+			IrcClient.join(channel['name']);
+		}
 	}
 
 	/**
@@ -96,7 +100,7 @@ export default class IrcClient {
 
 	/**
 	 * Tracks the last message sent to the IRC for rate limit
-	 * bypass purposes in the 'sendMessage' method. :tf:
+	 * bypass purposes in the 'message' method. :tf:
 	 * @type {string}
 	 * @static
 	 * @ignore
@@ -111,7 +115,7 @@ export default class IrcClient {
 	 * @static
 	 * @method
 	 */
-	static sendMessage(channel, message) {
+	static message(channel, message) {
 		if (IrcClient.#lastMessage == message) {
 			message += ' ⠀'; // trolling
 		}
@@ -218,15 +222,7 @@ export default class IrcClient {
 	 * @static
 	 * @method
 	 */
-	static async onRoomstate(event) {
-		ChannelManager.setSettings(event.roomId, {
-			isEmoteOnly: event.isEmoteOnly,
-			isSubOnly: event.isSubOnly,
-			isFollowOnly: event.isFollowOnly,
-			slow: event.slow,
-			r9k: event.r9k
-		});
-	}
+	static async onRoomstate(event) {}
 
 	/**
 	 * The function to trigger when reciving a reconnect event.
@@ -241,9 +237,11 @@ export default class IrcClient {
 			let socket = await IrcClient.connect('wss://irc-ws.chat.twitch.tv:443');
 			IrcClient.#socket.close();
 			IrcClient.#socket = socket;
-			ChannelManager.getConnectedNames().forEach((name) => {
-				IrcClient.join(name);
-			});
+			// get all connected channels from db
+			const channels = await Channel.findAll({ where: { isConnected: true } });
+			for (const channel of channels) {
+				IrcClient.join(channel['name']);
+			}
 		}, 5 * 1000);
 	}
 
@@ -279,18 +277,18 @@ export default class IrcClient {
 
 /**
  * Enum representing all IRC-event types.
- *
- *     MESSAGE:    'PRIVMSG'
- *     WHISPER:    'WHISPER'
- *     USERSTATE:  'USERSTATE'
- *     USERNOTICE: 'USERNOTICE'
- *     ROOMSTATE:  'ROOMSTATE'
- *     RECONNECT:  'RECONNECT'
- *     NOTICE:     'NOTICE'
- *     JOIN:       'JOIN'
- *     PART:       'PART'
- *     PING:       'PING'
- *
+ * ```
+ * MESSAGE:    'PRIVMSG'
+ * WHISPER:    'WHISPER'
+ * USERSTATE:  'USERSTATE'
+ * USERNOTICE: 'USERNOTICE'
+ * ROOMSTATE:  'ROOMSTATE'
+ * RECONNECT:  'RECONNECT'
+ * NOTICE:     'NOTICE'
+ * JOIN:       'JOIN'
+ * PART:       'PART'
+ * PING:       'PING'
+ * ```
  * @enum {string}
  */
 export const EventType = {
@@ -349,7 +347,7 @@ export class Event {
 
 		let tags = {};
 		if (strings[index].charAt(0) == '@') {
-			let rawTags = strings[index].slice(1).split(';');
+			const rawTags = strings[index].slice(1).split(';');
 			for (const rawTag of rawTags) {
 				let pair = rawTag.split('=');
 				tags[pair[0]] = pair[1];
@@ -363,8 +361,8 @@ export class Event {
 			index++;
 		}
 
-		let type = strings[index];
-		let args = strings.slice(index + 1);
+		const type = strings[index];
+		const args = strings.slice(index + 1).filter((element) => element); // Filter empty strings out.
 
 		/** raw irc-data class sorting */
 		switch (type) {
@@ -901,3 +899,6 @@ export class UndefinedEvent extends Event {
 		this.args = args;
 	}
 }
+
+/** Initialize on import */
+await IrcClient.init();

@@ -1,5 +1,7 @@
 # ZnxMech
+
 .env file structure:
+
 ```
 // client settings
 CLIENT_ID = *client id*
@@ -14,7 +16,9 @@ BOT_ID = *bot user id*
 BOT_NICK = *bot login name*
 BOT_OAUTH = *bot oauth from some generator*
 ```
+
 This JS code is formatted using [prettier](https://prettier.io/) with these settings changed:
+
 ```
 Print Width: 120
 Single Quote: true

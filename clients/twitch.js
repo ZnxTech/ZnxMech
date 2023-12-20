@@ -559,3 +559,6 @@ export default class Twitch {
 		}
 	}
 }
+
+/** Initialize on import */
+await Twitch.init();

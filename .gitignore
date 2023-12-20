@@ -1,3 +1,5 @@
 .env
-settings.json
 node_modules/
+data.session.sql
+database/data.db
+.vscode/settings.json

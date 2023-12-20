@@ -1,4 +1,16 @@
 {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"sqltools.connections": [
+		{
+			"previewLimit": 50,
+			"driver": "SQLite",
+			"name": "data",
+			"database": "${workspaceFolder:ZnxMech}/database/data.db"
+		}
+	],
+	"sqltools.useNodeRuntime": true,
+	"[sql]": {
+		"editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
+	}
 }

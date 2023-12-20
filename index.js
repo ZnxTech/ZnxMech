@@ -11,9 +11,8 @@ import 'dotenv/config';
 import IrcClient, { EventType } from './clients/irc.js';
 import Twitch from './clients/twitch.js';
 
-import ChannelManager from './managers/channels.js';
-import UserManager from './managers/users.js';
-import CommandManager, { Rank } from './managers/commands.js';
+import CommandManager, { Rank, ArgValue } from './managers/commands.js';
+import Database, { Channel } from './database/database.js';
 
 /**
  * Command definitions:
@@ -25,18 +24,18 @@ CommandManager.create(
 		triggers: ['hey', 'hello', 'hi'],
 		cooldown: 10 * 1000
 	},
-	(event) => {
-		IrcClient.sendMessage(event.channel, `/me FeelsOkayMan Hey ${event.userCName}`);
+	(event, args) => {
+		IrcClient.message(event.channel, `/me FeelsOkayMan Hey ${event.userCName}`);
 	}
 );
 
 CommandManager.create(
 	{
-		triggers: ['source', 'code', 'repo', 'git'],
+		triggers: ['sourcecode', 'source', 'repo', 'git'],
 		cooldown: 10 * 1000
 	},
-	(event) => {
-		IrcClient.sendMessage(event.channel, 'https://github.com/ZnxTech/ZnxMech');
+	(event, args) => {
+		IrcClient.message(event.channel, 'https://github.com/ZnxTech/ZnxMech');
 	}
 );
 
@@ -44,16 +43,43 @@ CommandManager.create(
 	{
 		triggers: ['join'],
 		rank: Rank.ADMIN,
-		cooldown: 0
+		cooldown: 0,
+		args: {
+			isOfflineOnly: {
+				triggers: ['offline', 'o'],
+				type: ArgValue.NULL
+			}
+		}
 	},
-	async (event) => {
-		const name = event.message.split(' ')[1]?.toLowerCase();
-		const response = await Twitch.getUsers({ login: name });
-		if (response) {
-			const id = response.data.data[0].id;
-			await ChannelManager.joinChannel(id, name);
+	async (event, args) => {
+		/** Main argument is the channel name to connect to */
+		const name = args.main?.value;
+
+		/** Check if string */
+		if (typeof name == 'string') {
+			/** Request Twitch for channel ID */
+			const response = await Twitch.getUsers({ login: name });
+			const id = response?.data.data[0]?.id;
+
+			/** Check if id returned is valid */
+			if (id) {
+				/** Obtain channel model from database, or build it if it doesnt exist on the database */
+				const [user, built] = await Channel.findOrBuild({ where: { id: id }, defaults: { name: name } });
+				/** Set connection status to true */
+				user['isConnected'] = true;
+				/** Set offline only status */
+				user['isOfflineOnly'] = args.isOfflineOnly?.triggered;
+				/** Save channel model to database */
+				await user.save();
+				/** Join channel in IRC */
+				IrcClient.join(name);
+			} else {
+				/** Channel name doesnt exist on Twitch */
+				IrcClient.message(event.channel, '/me invalid channel name.');
+			}
 		} else {
-			IrcClient.sendMessage(event.channel, '/me invalid channel.');
+			/** No main argument (channel name) provided, null */
+			IrcClient.message(event.channel, '/me channel name not provided.');
 		}
 	}
 );
@@ -64,40 +90,33 @@ CommandManager.create(
 		rank: Rank.ADMIN,
 		cooldown: 0
 	},
-	async (event) => {
-		const name = event.message.split(' ')[1]?.toLowerCase();
-		const response = await Twitch.getUsers({ login: name });
-		if (response) {
-			const id = response.data.data[0].id;
-			ChannelManager.partChannel(id);
+	async (event, args) => {
+		/** Main argument is the channel name to connect to */
+		const name = args.main?.value;
+
+		/** Check if string */
+		if (typeof name == 'string') {
+			/** Request Twitch for channel ID */
+			const response = await Twitch.getUsers({ login: name });
+			const id = response?.data.data[0]?.id;
+
+			/** Check if id returned is valid */
+			if (id) {
+				/** Obtain channel model from database, or build it if it doesnt exist on the database */
+				const [user, built] = await Channel.findOrBuild({ where: { id: id }, defaults: { name: name } });
+				/** Set connection status to false */
+				user['isConnected'] = false;
+				/** Part channel in IRC */
+				IrcClient.part(name);
+				/** Save channel model to database */
+				await user.save();
+			} else {
+				/** Channel name doesnt exist on Twitch */
+				IrcClient.message(event.channel, '/me invalid channel name.');
+			}
 		} else {
-			IrcClient.sendMessage(event.channel, '/me invalid channel.');
+			/** No main argument (channel name) provided, null */
+			IrcClient.message(event.channel, '/me channel name not provided.');
 		}
 	}
 );
-
-/**
- * Initializes all managers and clients:
- * -------------------------------------
- */
-
-await IrcClient.init();
-await Twitch.init();
-
-ChannelManager.init();
-UserManager.init();
-
-/**
- * Sets default bot settings:
- * --------------------------
- */
-
-// Joins ZnxMech.
-//@ts-ignore
-ChannelManager.joinChannel(+process.env.BOT_ID, process.env.BOT_NICK?.toLowerCase());
-
-// Sets ZnxTech & ZnxMech as owners.
-//@ts-ignore
-UserManager.setRank(+process.env.OWNER_ID, Rank.OWNER);
-//@ts-ignore
-UserManager.setRank(+process.env.BOT_ID, Rank.OWNER);
