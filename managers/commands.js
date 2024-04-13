@@ -26,6 +26,39 @@ const Prefix = {
 };
 
 /**
+ * Enum representing command ranks values:
+ * ```
+ * BANNED:  -1 // The user is banned from using the bot.
+ * DEFAULT:  0 // The default rank given to users.
+ * TRUSTED: +1 // The user is responsible and wont spam annoying/abusive commands.
+ * ADMIN:   +2 // The user has control over the bot.
+ * OWNER:   +3 // The user is the owner of the bot and has full control over it.
+ * ```
+ * @enum {number}
+ */
+export const Rank = {
+	BANNED: -1,
+	DEFAULT: 0,
+	TRUSTED: 1,
+	ADMIN: 2,
+	OWNER: 3
+};
+
+/**
+ * Enum representing command argument values:
+ * ```
+ * NULL:     0 // The argument is a trigger      [ --arg ... ]
+ * NUMBER:  +1 // The argument takes in a number [ --arg 123 ]
+ * NUMBER:  +1 // The argument takes in a string [ --arg abc ]
+ * ```
+ * @enum {number}
+ */
+export const ArgValue = {
+	NULL: 0,
+	NUMBER: 1
+};
+
+/**
  * A manager class that manages all command data and trigger conditons.
  * @default
  */
@@ -120,38 +153,6 @@ export default class CommandManager {
 		}
 	}
 }
-
-/**
- * Enum representing command ranks values:
- * ```
- * BANNED:  -1 // The user is banned from using the bot.
- * DEFAULT:  0 // The default rank given to users.
- * TRUSTED: +1 // The user is responsible and wont spam annoying/abusive commands.
- * ADMIN:   +2 // The user has control over the bot.
- * OWNER:   +3 // The user is the owner of the bot and has full control over it.
- * ```
- * @enum {number}
- */
-export const Rank = {
-	BANNED: -1,
-	DEFAULT: 0,
-	TRUSTED: 1,
-	ADMIN: 2,
-	OWNER: 3
-};
-
-/**
- * Enum representing command argument values:
- * ```
- * NULL:     0 // The argument is a trigger      [ --arg ... ]
- * NUMBER:  +1 // The argument takes in a number [ --arg 123 ]
- * ```
- * @enum {number}
- */
-export const ArgValue = {
-	NULL: 0,
-	NUMBER: 1
-};
 
 /**
  * @classdesc A command data-struct class with some functionalities.
@@ -257,7 +258,7 @@ export class Command {
 	 * ```
 	 */
 	getArguments(words) {
-		/** @type {Object<string, ArgResult>} */
+		/** @type {Object<string & 'main', ArgResult>} */
 		const args = {};
 
 		for (const [name, settings] of Object.entries(this.args)) {

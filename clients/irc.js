@@ -12,6 +12,8 @@ import 'dotenv/config';
 import WebSocket from 'ws';
 import CommandManager from '../managers/commands.js';
 import Database, { User, Channel } from '../database/database.js';
+import Twitch from './twitch.js';
+import { Counter } from '../managers/misctools.js';
 
 /**
  *
@@ -111,11 +113,11 @@ export default class IrcClient {
 	 * Sends a message in the IRC.
 	 * @param {string} channel - The channel's login name.
 	 * @param {string} message - The message to send.
-	 * @returns {void} Returns a boolean of if the message was sent or not.
+	 * @returns {Promise<void>} Returns a boolean of if the message was sent or not.
 	 * @static
 	 * @method
 	 */
-	static message(channel, message) {
+	static async message(channel, message) {
 		if (IrcClient.#lastMessage == message) {
 			message += ' ⠀'; // trolling
 		}
@@ -195,6 +197,7 @@ export default class IrcClient {
 	static async onMessage(event) {
 		console.log(event.toString());
 		CommandManager.process(event);
+		Counter.process(event.message);
 	}
 
 	/**
@@ -232,6 +235,7 @@ export default class IrcClient {
 	 * @method
 	 */
 	static async onReconnect(event) {
+		console.log('IRC reconnecting');
 		// try to reconnect after 5 seconds
 		setTimeout(async () => {
 			let socket = await IrcClient.connect('wss://irc-ws.chat.twitch.tv:443');
