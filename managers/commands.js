@@ -11,6 +11,7 @@
 import Twitch from '../clients/twitch.js';
 import IrcClient, * as Irc from '../clients/irc.js';
 import Database, { User, Channel } from '../database/database.js';
+import { or } from 'sequelize';
 
 /**
  * Enum representing important prefixes.
@@ -122,9 +123,14 @@ export default class CommandManager {
 				return; // User is under cooldown for this command, exit process.
 			}
 
-			/** Check for black/white list */
-			if (!command.whitelist.includes(event.channel) || command.blacklist.includes(event.channel)) {
-				return; // Channel is or not in whitelist or is in the blacklist
+			/** Check for whitelist */
+			if (command.whitelist.length != 0 && !command.whitelist.includes(event.channel)) {
+				return; // Channel is not in the existing whitelist.
+			}
+
+			/** Check for blacklist */
+			if (command.blacklist.includes(event.channel)) {
+				return; // Channel is in the blacklist.
 			}
 
 			/** Check for command permissions */
