@@ -81,20 +81,22 @@ export default class CommandManager {
 	 * @property {string[]} triggers - The word/s to look for to cause the command to trigger.
 	 * @property {Object<string, ArgSettings>} [args] - The arguments to look for in the chat message.
 	 * @property {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the command.
+	 * @property {string[]} [whitelist = []] - a simple command whitelist.
+	 * @property {string[]} [blacklist = []] - a simple command blacklist.
 	 * @property {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the command again.
 	 */
 
 	/**
 	 * A function that adds the function/method the the manager's commands array.
-	 * @param {CommandSettings} settings - The command settings.
 	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
+	 * @param {CommandSettings} settings - The command settings.
 	 * @returns {void}
 	 * @static
 	 * @method
 	 */
 	static create(settings, callback) {
 		/** Create command object */
-		const command = new Command(callback, settings.triggers, settings.args, settings.rank, settings.cooldown);
+		const command = new Command(settings, callback);
 		CommandManager.#commands.push(command);
 	}
 
@@ -111,13 +113,18 @@ export default class CommandManager {
 
 		for (const command of CommandManager.#commands) {
 			/** Check for command triggers */
-			if (!command.triggers.some((trigger) => words[0] == `${Prefix.COMMAND}${trigger}`)) {
+			if (!command.triggers.some((trigger) => words[0].toLowerCase() == `${Prefix.COMMAND}${trigger}`)) {
 				continue; // Event message doesnt contain current command, move to the next one.
 			}
 
 			/** Check for command cooldowns */
 			if (command.isCooldown(event.roomId, event.userId)) {
 				return; // User is under cooldown for this command, exit process.
+			}
+
+			/** Check for black/white list */
+			if (!command.whitelist.includes(event.channel) || command.blacklist.includes(event.channel)) {
+				return; // Channel is or not in whitelist or is in the blacklist
 			}
 
 			/** Check for command permissions */
@@ -130,8 +137,8 @@ export default class CommandManager {
 			const channel = await Channel.findByPk(event.roomId);
 			if (channel?.['isOfflineOnly'] ?? true) {
 				// Channel is offline only, check for if the channel is live.
-				const response = await Twitch.getStreams({ id: event.roomId });
-				if (!response?.data.data[0]) {
+				const response = await Twitch.getStreams({ user_id: event.roomId });
+				if (response?.data.data[0]) {
 					return; // Channel is live, exit process.
 				}
 			}
@@ -160,13 +167,10 @@ export default class CommandManager {
 export class Command {
 	/**
 	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
-	 * @param {string[]} triggers - The word/s to look for to cause the command to trigger.
-	 * @param {Object<string, ArgSettings>} [args] - The arguments to look for in the chat message.
-	 * @param {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the command.
-	 * @param {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the command again.
+	 * @param {CommandSettings} settings - The command settings.
 	 * @constructor
 	 */
-	constructor(callback, triggers, args = {}, rank = Rank.DEFAULT, cooldown = 0) {
+	constructor(settings, callback) {
 		/**
 		 * @type {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
 		 */
@@ -175,22 +179,32 @@ export class Command {
 		/**
 		 * @type {string[]} triggers - The name/s to look for to cause the command to trigger.
 		 */
-		this.triggers = triggers;
+		this.triggers = settings.triggers;
 
 		/**
 		 * @type {Object<string, ArgSettings>} args - The arguments to look for in the chat message.
 		 */
-		this.args = args;
+		this.args = settings.args ?? {};
 
 		/**
 		 * @type {Rank} rank - The rank value that is required to call the command.
 		 */
-		this.rank = rank;
+		this.rank = settings.rank ?? Rank.DEFAULT;
+
+		/**
+		 * @property {string[]} whitelist - a simple command whitelist.
+		 */
+		this.whitelist = settings.whitelist ?? [];
+
+		/**
+		 * @property {string[]} blacklist - a simple command blacklist.
+		 */
+		this.blacklist = settings.blacklist ?? [];
 
 		/**
 		 * @type {number} cooldown - The time in miliseconds that the user needs to wait until they can call the command again.
 		 */
-		this.cooldown = cooldown;
+		this.cooldown = settings.cooldown ?? 0;
 
 		/**
 		 * @type {object} cooldowns - An object containing booleans of whether or not a user is on cooldown, sorted in to room ids then user ids.

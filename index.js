@@ -36,7 +36,7 @@ CommandManager.create(
 		cooldown: 10 * 1000
 	},
 	(event, args) => {
-		IrcClient.message(event.channel, `Tasty !`);
+		IrcClient.message(event.channel, `Tasty`);
 	}
 );
 
@@ -73,6 +73,7 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['tmods'],
+		whitelist: ['znxtech'],
 		cooldown: 10 * 1000
 	},
 	(event, args) => {
@@ -86,6 +87,7 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['rwg'],
+		whitelist: ['znxtech'],
 		cooldown: 10 * 1000
 	},
 	(event, args) => {
