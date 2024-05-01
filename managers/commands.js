@@ -11,7 +11,6 @@
 import Twitch from '../clients/twitch.js';
 import IrcClient, * as Irc from '../clients/irc.js';
 import Database, { User, Channel } from '../database/database.js';
-import { or } from 'sequelize';
 
 /**
  * Enum representing important prefixes.
@@ -46,20 +45,6 @@ export const Rank = {
 };
 
 /**
- * Enum representing command argument values:
- * ```
- * NULL:     0 // The argument is a trigger      [ --arg ... ]
- * NUMBER:  +1 // The argument takes in a number [ --arg 123 ]
- * NUMBER:  +1 // The argument takes in a string [ --arg abc ]
- * ```
- * @enum {number}
- */
-export const ArgValue = {
-	NULL: 0,
-	NUMBER: 1
-};
-
-/**
  * A manager class that manages all command data and trigger conditons.
  * @default
  */
@@ -74,7 +59,7 @@ export default class CommandManager {
 	/**
 	 * @typedef {object} ArgSettings
 	 * @property {string[]} triggers - The argument triggers.
-	 * @property {ArgValue} type - The type argument input/output.
+	 * @property {boolean} isValued - Boolean of whether or not the argument has a value.
 	 */
 
 	/**
@@ -82,8 +67,8 @@ export default class CommandManager {
 	 * @property {string[]} triggers - The word/s to look for to cause the command to trigger.
 	 * @property {Object<string, ArgSettings>} [args] - The arguments to look for in the chat message.
 	 * @property {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the command.
-	 * @property {string[]} [whitelist = []] - a simple command whitelist.
-	 * @property {string[]} [blacklist = []] - a simple command blacklist.
+	 * @property {string[]} [whitelist = []] - A simple command whitelist.
+	 * @property {string[]} [blacklist = []] - A simple command blacklist.
 	 * @property {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the command again.
 	 */
 
@@ -221,61 +206,15 @@ export class Command {
 	/**
 	 * @typedef {object} ArgResult
 	 * @property {boolean} triggered - true if the argument has been triggered, false otherwise.
-	 * @property {string|number|null} value - value of the argument, null if argument trigger or value were not found.
+	 * @property {string|null} value - value of the argument, null if argument trigger was not found.
 	 */
 
 	/**
 	 * Parses all arguments and their values from the command's arg settings.
-	 *
 	 * it returns the result in an object in the same key the settings were configured in.
-	 *
 	 * main is the only exeption, you can not name a key 'main' since its used to store the main argument.
-	 *
-	 * TODO: implement a string argument
-	 * @param {string[]} words
-	 * @returns {Object<string & 'main', ArgResult>}
-	 * @example
-	 * ``` js
-	 * // In command settings:
-	 * {
-	 *     triggers: ['join'],
-	 *     rank: Rank.ADMIN,
-	 *     args: {
-	 *         isOfflineOnly: {
-	 *             triggers: ['offline', 'o'],
-	 *             type: ArgValue.NULL
-	 *         }
-	 *     }
-	 * }
-	 *
-	 * // User typed:
-	 * '$join btmc --offline'
-	 * // Result:
-	 * {
-	 *     main: {
-	 *         triggered: true,
-	 *         value: 'btmc'
-	 *     }
-	 *     isOfflineOnly: {
-	 *         triggered: true,
-	 *         value: null
-	 *     }
-	 * }
-	 *
-	 * // User typed:
-	 * '$join znxmech'
-	 * // Result:
-	 * {
-	 *     main: {
-	 *         triggered: true,
-	 *         value: 'znxmech'
-	 *     }
-	 *     isOfflineOnly: {
-	 *         triggered: false,
-	 *         value: null
-	 *     }
-	 * }
-	 * ```
+	 * @param {string[]} words - Array of all message strings split at spaces.
+	 * @returns {Object<string & 'main', ArgResult>} - Object containing final argument results.
 	 */
 	getArguments(words) {
 		/** @type {Object<string & 'main', ArgResult>} */
@@ -296,27 +235,14 @@ export class Command {
 				continue; // Invalid index -1. argument not found, go next.
 			}
 
-			/** Parse argument value */
-			let value;
-			switch (settings.type) {
-				case ArgValue.NULL:
-					value = null;
-					break;
-
-				case ArgValue.NUMBER:
-					value = Number.isNaN(+words[index + 1]) ? null : +words[index + 1];
-					break;
-
-				default:
-					value = null;
-					break;
-			}
-
-			/** Cut out argument and its value, if not null */
-			if (value) {
-				words.splice(index, 2); // Argument has value, remove trigger and value
+			/** Value assigning and splicing for main argument */
+			let value = null;
+			if (settings.isValued) {
+				// Argument has value, splice and assign.
+				value = words.splice(index, 2)[1];
 			} else {
-				words.splice(index, 1); // No argument value, remove trigger only
+				// Argument has no value, only splice.
+				words.splice(index, 1);
 			}
 
 			Object.assign(args, { [name]: { triggered: true, value: value } });
@@ -324,7 +250,7 @@ export class Command {
 
 		/** Assign main string argument */
 		const main = words.slice(1).join(' '); // Cut command trigger off and join to string
-		Object.assign(args, { main: { triggered: !!main, value: main ? null : main } });
+		Object.assign(args, { main: { triggered: !!main, value: main ? main : null } });
 
 		return args;
 	}

@@ -11,7 +11,7 @@ import 'dotenv/config';
 import IrcClient, { EventType } from './clients/irc.js';
 import Twitch from './clients/twitch.js';
 
-import CommandManager, { Rank, ArgValue } from './managers/commands.js';
+import CommandManager, { Rank } from './managers/commands.js';
 import Database, { Channel } from './database/database.js';
 import { Counter } from './managers/misctools.js';
 
@@ -47,7 +47,7 @@ CommandManager.create(
 		args: {
 			maxRoll: {
 				triggers: ['number', 'n'],
-				type: ArgValue.NUMBER
+				isValued: true
 			}
 		}
 	},
@@ -218,13 +218,15 @@ CommandManager.create(
 		args: {
 			offline: {
 				triggers: ['offline', 'o'],
-				type: ArgValue.NULL
+				isValued: false
 			}
 		}
 	},
 	async (event, args) => {
 		/** Main argument is the channel name to connect to */
 		const name = args.main?.value;
+
+		console.log(args);
 
 		/** Check if string */
 		if (typeof name != 'string') {
@@ -254,6 +256,7 @@ CommandManager.create(
 		await user.save();
 		/** Join channel in IRC */
 		IrcClient.join(name);
+		IrcClient.message(event.channel, `/me Joined ${name}`);
 	}
 );
 
@@ -280,6 +283,7 @@ CommandManager.create(
 				/** Set connection status to false */
 				user['isConnected'] = false;
 				/** Part channel in IRC */
+				IrcClient.message(event.channel, `/me Left ${name}`);
 				IrcClient.part(name);
 				/** Save channel model to database */
 				await user.save();

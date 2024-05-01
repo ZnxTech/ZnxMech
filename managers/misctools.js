@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- *
+ * @deprecated Leftover code, abandoned.
  * @module MiscTools
  * @author Daniel "Znx" Levi
  */
