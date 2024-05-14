@@ -13,202 +13,17 @@ import Twitch from './clients/twitch.js';
 
 import CommandManager, { Rank } from './managers/commands.js';
 import Database, { Channel } from './database/database.js';
-import { Counter } from './managers/misctools.js';
+
+import OsuMemory from './clients/osumemory.js';
 
 /**
  * Command definitions:
  * --------------------
  */
 
-CommandManager.create(
-	{
-		triggers: ['hey', 'hello', 'hi'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(event.channel, `/me FeelsOkayMan Hey ${event.userCName}`);
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['tasty'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(event.channel, `Tasty`);
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['roll', 'r'],
-		cooldown: 1 * 1000,
-		args: {
-			maxRoll: {
-				triggers: ['number', 'n'],
-				isValued: true
-			}
-		}
-	},
-	(event, args) => {
-		var max = 1000;
-		if (args.maxRoll.triggered) {
-			max = Number(args.maxRoll.value);
-		}
-		IrcClient.message(event.channel, `@${event.userCName} ${Math.floor(Math.random() * max)}`);
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['source', 'sourcecode', 'repo', 'git'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(event.channel, 'https://github.com/ZnxTech/ZnxMech');
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['tmods'],
-		whitelist: ['znxtech'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(
-			event.channel,
-			'playing calamity with some other qol mods on master revengeance mode https://pastebin.com/iXiL8MsX'
-		);
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['rwg'],
-		whitelist: ['znxtech'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(event.channel, 'reverted RWG: https://znx.s-ul.eu/CDZAq0hz');
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['angelica'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(event.channel, 'Angelica (Forge 1.7.10 Sodium): https://github.com/GTNewHorizons/Angelica');
-	}
-);
-
-//CommandManager.create(
-//	{
-//		triggers: ['counter'],
-//		rank: Rank.ADMIN,
-//		cooldown: 10 * 1000,
-//		args: {
-//			reset: {
-//				triggers: ['reset', 'r'],
-//				type: ArgValue.NULL
-//			},
-//			delete: {
-//				triggers: ['delete', 'd'],
-//				type: ArgValue.NULL
-//			},
-//			nuke: {
-//				triggers: ['nuke', 'n'],
-//				type: ArgValue.NULL
-//			}
-//		}
-//	},
-//	(event, args) => {
-//		// work on this later lol, too lazy.
-//		if (1 === 1) {
-//			return; // IDE wont shut up for having just return instead of this.
-//		}
-//
-//		/** Check nuke argument */
-//		if (args.nuke?.triggered) {
-//			/** Nuke all counters */
-//			Counter.nuke();
-//			IrcClient.message(event.channel, '/me all counters deleted. RIPBOZO');
-//			return; // Counters nuked, exit.
-//		}
-//
-//		/** Check for main argument string */
-//		if (typeof args.main?.value != 'string') {
-//			/** No main argument provided, exit */
-//			IrcClient.message(event.channel, '/me counter name not provided.');
-//			return; // No main argument, exit.
-//		}
-//
-//		/** Parse name and regex */
-//		const match = args.main.value.match(/[^\/]*/g);
-//
-//		const name = match?.[0] ?? '';
-//		const pattern = match?.[1];
-//		const flags = match?.[2];
-//
-//		if (args.delete?.triggered) {
-//			/** Delete the provided counter */
-//			Counter.delete(name);
-//			IrcClient.message(event.channel, `/me ${name} counter deleted.`);
-//			return; // Counter deleted, exit.
-//		}
-//
-//		if (args.reset?.triggered) {
-//			/** Reset the provided counter */
-//			Counter.reset(name);
-//		}
-//
-//		/** Create RegExp */
-//		// const regex = new RegExp(pattern, flags);
-//	}
-//);
-
-CommandManager.create(
-	{
-		triggers: ['gregtech', 'gtnh', 'greg'],
-		cooldown: 10 * 1000
-	},
-	async (event, args) => {
-		IrcClient.message(
-			event.channel,
-			`GregTech is a technology and chemistry mod focused on realistic crafting process chains: https://gregtech.overminddl1.com/ 
-			GTNH is a modpack based on GregTech-5U that takes around 7k-10k hours to finish (StarGate tier): https://github.com/GTNewHorizons/GT-New-Horizons-Modpack`
-		);
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['prism', 'prismlauncher', 'getprism'],
-		cooldown: 10 * 1000
-	},
-	async (event, args) => {
-		IrcClient.message(
-			event.channel,
-			`Stop using the CurseForge launcher! use Prism launcher instead: https://prismlauncher.org/`
-		);
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['key', 'apikey', 'curseforgekey'],
-		cooldown: 10 * 1000
-	},
-	async (event, args) => {
-		IrcClient.message(
-			event.channel,
-			`CurseForge API key: $2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm`
-		);
-	}
-);
+/**
+ * Admin Commands:
+ */
 
 CommandManager.create(
 	{
@@ -295,5 +110,161 @@ CommandManager.create(
 			/** No main argument (channel name) provided, null */
 			IrcClient.message(event.channel, '/me channel name not provided.');
 		}
+	}
+);
+
+/**
+ * Main Commands
+ */
+
+CommandManager.create(
+	{
+		triggers: ['nowplaying', 'np'],
+		cooldown: 1 * 1000,
+		whitelist: ['znxtech', 'znxmech']
+	},
+	async (event, args) => {
+		let npString = await OsuMemory.getNpString();
+		IrcClient.message(event.channel, npString);
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['roll', 'r'],
+		cooldown: 1 * 1000,
+		args: {
+			min: {
+				triggers: ['min', 'm'],
+				isValued: true
+			}
+		}
+	},
+	(event, args) => {
+		/** Command defaults */
+		let max = 100;
+		let min = 0;
+
+		if (args.main.triggered) {
+			max = Number(args.main.value);
+		}
+		if (args.min.triggered) {
+			min = Number(args.min.value);
+		}
+
+		IrcClient.message(event.channel, `@${event.userCName} ${Math.floor(min + Math.random() * (max - min))}`);
+	}
+);
+
+/**
+ * Text only commands:
+ */
+
+// Mainly for testing
+CommandManager.create(
+	{
+		triggers: ['hey', 'hello', 'hi'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, `FeelsOkayMan Hey ${event.userCName}`);
+	}
+);
+
+// Help command
+CommandManager.create(
+	{
+		triggers: ['help', 'h'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, 'Idk read this https://github.com/ZnxTech/ZnxMech/blob/main/index.js');
+	}
+);
+
+// For tonker manana :3c
+CommandManager.create(
+	{
+		triggers: ['tasty'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, `Tasty`);
+	}
+);
+
+// Fuck this emote fr.
+CommandManager.create(
+	{
+		triggers: ['fuckta'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, `ta filter: r"!(message.content match r"^((ta|tuh) *)+.*$")"`);
+	}
+);
+
+// Source link
+CommandManager.create(
+	{
+		triggers: ['source', 'sourcecode', 'repo', 'git'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, 'https://github.com/ZnxTech/ZnxMech');
+	}
+);
+
+/**
+ * GregTech/Own Channel Commands:
+ */
+
+CommandManager.create(
+	{
+		triggers: ['prism', 'prismlauncher', 'getprism'],
+		cooldown: 10 * 1000
+	},
+	async (event, args) => {
+		IrcClient.message(
+			event.channel,
+			`Stop using the CurseForge launcher! use Prism launcher instead: https://prismlauncher.org/`
+		);
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['angelica'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, 'Angelica (Forge 1.7.10 Sodium): https://github.com/GTNewHorizons/Angelica');
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['gregtech', 'gtnh', 'greg'],
+		cooldown: 10 * 1000
+	},
+	async (event, args) => {
+		IrcClient.message(
+			event.channel,
+			`GregTech is a technology and chemistry mod focused on realistic crafting process chains: https://gregtech.overminddl1.com/ 
+			GTNH is a modpack based on GregTech-5U that takes around 7k-10k hours to finish (StarGate tier): https://github.com/GTNewHorizons/GT-New-Horizons-Modpack`
+		);
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['key', 'apikey', 'curseforgekey'],
+		cooldown: 10 * 1000
+	},
+	async (event, args) => {
+		IrcClient.message(
+			event.channel,
+			`CurseForge API key: $2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm`
+		);
 	}
 );

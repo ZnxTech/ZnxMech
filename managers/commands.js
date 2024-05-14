@@ -222,9 +222,7 @@ export class Command {
 
 		for (const [name, settings] of Object.entries(this.args)) {
 			/** Prefix the triggers array */
-			const triggers = settings.triggers.map(
-				(trigger, index) => `${Prefix.ARGUMENT.repeat(index == 0 ? 2 : 1)}${trigger}`
-			);
+			const triggers = settings.triggers.map((trigger) => `${Prefix.ARGUMENT}${trigger}`);
 
 			/** Use the prefixed array to find the argument index in the words array */
 			const index = words.findIndex((word) => triggers.includes(word));

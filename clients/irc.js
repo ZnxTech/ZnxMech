@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-ignore
 
 /**
  * Contains a static manager class and data-struct classes
@@ -13,7 +13,6 @@ import WebSocket from 'ws';
 import CommandManager from '../managers/commands.js';
 import Database, { User, Channel } from '../database/database.js';
 import Twitch from './twitch.js';
-import { Counter } from '../managers/misctools.js';
 
 /**
  *
@@ -33,7 +32,7 @@ export default class IrcClient {
 	 * @method
 	 */
 	static async init() {
-		IrcClient.#socket = await IrcClient.connect('wss://irc-ws.chat.twitch.tv:443');
+		IrcClient.#socket = await IrcClient.connect();
 		const channels = await Channel.findAll({ where: { isConnected: true } });
 		for (const channel of channels) {
 			IrcClient.join(channel['name']);
@@ -42,17 +41,16 @@ export default class IrcClient {
 
 	/**
 	 * Creates and connects a websocket to the url provided, returns websocket on open.
-	 * @param {string} url - The url for the websocket to connect to.
 	 * @returns {Promise<WebSocket>} The connected websocket.
 	 * @static
 	 * @method
 	 */
-	static async connect(url) {
+	static async connect() {
 		return new Promise((resolve, reject) => {
-			let socket = new WebSocket(url);
+			let socket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
 			/** OnOpen function */
-			socket.onopen = (response) => {
+			socket.onopen = (event) => {
 				socket.send(`PASS oauth:${process.env.BOT_OAUTH}`);
 				socket.send(`NICK ${process.env.BOT_NICK}`);
 				socket.send(`CAP REQ :twitch.tv/commands twitch.tv/tags`);
@@ -60,13 +58,13 @@ export default class IrcClient {
 			};
 
 			/** OnMessage function */
-			socket.onmessage = (response) => {
-				const data = response.data;
+			socket.onmessage = (event) => {
+				const data = event.data;
 				if (typeof data == 'string') {
 					const strings = data.slice(0, data.lastIndexOf('\r\n')).split('\r\n'); // '\r\n' spliting tomfoolery
 					for (const string of strings) {
-						let event = Event.create(string);
-						IrcClient.onEvent(event);
+						let eventObj = Event.create(string);
+						IrcClient.onEvent(eventObj);
 					}
 				}
 			};
@@ -149,36 +147,36 @@ export default class IrcClient {
 	 * @method
 	 */
 	static onEvent(event) {
-		switch (true) {
-			case event instanceof MessageEvent:
+		switch (event.type) {
+			case EventType.MESSAGE:
 				IrcClient.onMessage(event);
 				break;
 
-			case event instanceof UserstateEvent:
+			case EventType.USERNOTICE:
 				IrcClient.onUserstate(event);
 				break;
 
-			case event instanceof UsernoticeEvent:
+			case EventType.USERNOTICE:
 				IrcClient.onUsernotice(event);
 				break;
 
-			case event instanceof RoomstateEvent:
+			case EventType.ROOMSTATE:
 				IrcClient.onRoomstate(event);
 				break;
 
-			case event instanceof ReconnectEvent:
+			case EventType.RECONNECT:
 				IrcClient.onReconnect(event);
 				break;
 
-			case event instanceof JoinEvent:
+			case EventType.JOIN:
 				IrcClient.onJoin(event);
 				break;
 
-			case event instanceof PartEvent:
+			case EventType.PART:
 				IrcClient.onPart(event);
 				break;
 
-			case event instanceof PingEvent:
+			case EventType.PING:
 				IrcClient.onPing(event);
 				break;
 
@@ -197,7 +195,6 @@ export default class IrcClient {
 	static async onMessage(event) {
 		console.log(event.toString());
 		CommandManager.process(event);
-		Counter.process(event.message);
 	}
 
 	/**
@@ -238,7 +235,7 @@ export default class IrcClient {
 		console.log('IRC reconnecting');
 		// try to reconnect after 5 seconds
 		setTimeout(async () => {
-			let socket = await IrcClient.connect('wss://irc-ws.chat.twitch.tv:443');
+			let socket = await IrcClient.connect();
 			IrcClient.#socket.close();
 			IrcClient.#socket = socket;
 			// get all connected channels from db
