@@ -11,8 +11,11 @@
 import 'dotenv/config';
 import WebSocket from 'ws';
 import CommandManager from '../managers/commands.js';
+import * as Triggers from '../managers/triggers.js';
 import Database, { User, Channel } from '../database/database.js';
 import Twitch from './twitch.js';
+
+const KnownBots = ['StreamElements', 'FossaBot', 'l3lackshark', 'sheppsubot', 'PogpegaBot', 'ZnxMech'];
 
 /**
  *
@@ -33,7 +36,7 @@ export default class IrcClient {
 	 */
 	static async init() {
 		IrcClient.#socket = await IrcClient.connect();
-		const channels = await Channel.findAll({ where: { isConnected: true } });
+		const channels = await Channel.findAll({ where: { connected: true } });
 		for (const channel of channels) {
 			IrcClient.join(channel['name']);
 		}
@@ -109,17 +112,29 @@ export default class IrcClient {
 
 	/**
 	 * Sends a message in the IRC.
-	 * @param {string} channel - The channel's login name.
+	 * @param {string} channelName - The channel's login name.
 	 * @param {string} message - The message to send.
 	 * @returns {Promise<void>} Returns a boolean of if the message was sent or not.
 	 * @static
 	 * @method
 	 */
-	static async message(channel, message) {
+	static async message(channelName, message) {
+		/** Check for channel offline/live permissions */
+		const response = await Twitch.getUsers({ login: channelName });
+		const id = response?.data.data[0]?.id;
+		const channel = await Channel.findByPk(id);
+		if (channel?.['offline'] ?? true) {
+			// Channel is offline only, check for if the channel is live.
+			const response = await Twitch.getStreams({ user_id: id });
+			if (response?.data.data[0]) {
+				return; // Channel is live, exit process.
+			}
+		}
+
 		if (IrcClient.#lastMessage == message) {
 			message += ' ⠀'; // trolling
 		}
-		IrcClient.#socket.send(`PRIVMSG #${channel.toLowerCase()} :${message}`);
+		IrcClient.#socket.send(`PRIVMSG #${channelName.toLowerCase()} :${message}`);
 		IrcClient.#lastMessage = message;
 	}
 
@@ -194,7 +209,10 @@ export default class IrcClient {
 	 */
 	static async onMessage(event) {
 		console.log(event.toString());
-		CommandManager.process(event);
+		if (!KnownBots.includes(event.userCName)) {
+			CommandManager.process(event); // Filter out known bots.
+			Triggers.Repost.process(event);
+		}
 	}
 
 	/**
@@ -239,7 +257,7 @@ export default class IrcClient {
 			IrcClient.#socket.close();
 			IrcClient.#socket = socket;
 			// get all connected channels from db
-			const channels = await Channel.findAll({ where: { isConnected: true } });
+			const channels = await Channel.findAll({ where: { connected: true } });
 			for (const channel of channels) {
 				IrcClient.join(channel['name']);
 			}

@@ -17,7 +17,8 @@ import { Sequelize, DataTypes, Model } from 'sequelize';
  */
 const Database = new Sequelize({
 	dialect: 'sqlite',
-	storage: './database/data.db'
+	storage: './database/data.db',
+	logging: false
 });
 
 /**
@@ -74,12 +75,12 @@ Channel.init(
 			unique: true,
 			allowNull: false
 		},
-		isConnected: {
+		connected: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
 			allowNull: false
 		},
-		isOfflineOnly: {
+		offline: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: true,
 			allowNull: false

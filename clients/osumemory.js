@@ -52,6 +52,7 @@ export default class OsuMemory {
 			/** OnError function */
 			socket.onerror = (event) => {
 				console.log('\x1b[31mosu! memory server not found at port 24050.\x1b[0m');
+				resolve(undefined);
 			};
 
 			/** OnResponse function */

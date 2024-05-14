@@ -126,7 +126,7 @@ export default class CommandManager {
 
 			/** Check for channel offline/live permissions */
 			const channel = await Channel.findByPk(event.roomId);
-			if (channel?.['isOfflineOnly'] ?? true) {
+			if (channel?.['offline'] ?? true) {
 				// Channel is offline only, check for if the channel is live.
 				const response = await Twitch.getStreams({ user_id: event.roomId });
 				if (response?.data.data[0]) {
@@ -274,7 +274,7 @@ export class Command {
 	 * @method
 	 */
 	setCooldown(roomId, userId) {
-		// checks if an obj exists for the channel, if not create one
+		// Checks if an obj exists for the channel, if not create one
 		if (!this.cooldowns[roomId]) {
 			this.cooldowns[roomId] = {};
 		}
