@@ -15,6 +15,7 @@ import CommandManager, { Rank } from './managers/commands.js';
 import Database, { Channel, User } from './database/database.js';
 
 import OsuMemory from './clients/osumemory.js';
+import { Sequelize, where } from 'sequelize';
 
 /**
  * Command definitions:
@@ -29,7 +30,6 @@ CommandManager.create(
 	{
 		triggers: ['join'],
 		rank: Rank.ADMIN,
-		cooldown: 0,
 		args: {
 			offline: {
 				triggers: ['offline', 'o'],
@@ -75,8 +75,7 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['part', 'leave'],
-		rank: Rank.ADMIN,
-		cooldown: 0
+		rank: Rank.ADMIN
 	},
 	async (event, args) => {
 		/** Main argument is the channel name to disconnect from */
@@ -109,6 +108,26 @@ CommandManager.create(
 		/** Join channel in IRC */
 		IrcClient.message(name, `/me left ${name}.`);
 		IrcClient.part(name);
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['channels', 'connected'],
+		rank: Rank.ADMIN
+	},
+	async (event, args) => {
+		const channels = await Channel.findAll({ where: { connected: true } });
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['memtoggle', 'mt'],
+		rank: Rank.OWNER
+	},
+	(event, args) => {
+		OsuMemory.toggleSearch();
 	}
 );
 

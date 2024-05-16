@@ -23,6 +23,13 @@ export default class OsuMemory {
 	static #socket;
 
 	/**
+	 * If to search for a osu! memory websocket.
+	 * @type {boolean}
+	 * @static
+	 */
+	static #searching = true;
+
+	/**
 	 * The ws-v1 info object.
 	 * @type {Object | undefined}
 	 * @static
@@ -65,12 +72,45 @@ export default class OsuMemory {
 			/** OnClose function */
 			socket.onclose = (event) => {
 				console.log('\x1b[2mosu! memory closed, retrying in 15s.\x1b[0m');
+				if (!OsuMemory.#searching) {
+					return; // Stop searching.
+				}
 				setTimeout(async () => {
 					console.log('\x1b[2mosu! memory recconecting.\x1b[0m');
 					OsuMemory.#socket = await OsuMemory.connectGosu();
 				}, 15 * 1000); // Try reconnecting after 15s.
 			};
 		});
+	}
+
+	/**
+	 * Toggles the osu! memory searching state.
+	 * @returns {Promise<boolean>} Search state after toggle.
+	 * @static
+	 * @method
+	 */
+	static async toggleSearch() {
+		OsuMemory.#searching = !OsuMemory.#searching;
+		if (OsuMemory.#searching) {
+			console.log('\x1b[2mosu! memory recconecting.\x1b[0m');
+			OsuMemory.#socket = await OsuMemory.connectGosu(); // Restart search.
+		}
+		return OsuMemory.#searching;
+	}
+
+	/**
+	 * Sets the osu! memory searching state.
+	 * @returns {Promise<void>}
+	 * @static
+	 * @method
+	 */
+	static async setSearch(state) {
+		const oldState = OsuMemory.#searching;
+		OsuMemory.#searching = state;
+		if (!oldState && state) {
+			console.log('\x1b[2mosu! memory recconecting.\x1b[0m');
+			OsuMemory.#socket = await OsuMemory.connectGosu(); // Restart search.
+		}
 	}
 
 	/**
