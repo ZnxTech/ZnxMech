@@ -114,16 +114,36 @@ export default class OsuMemory {
 	}
 
 	/**
-	 * Return a formated now playing string.
+	 * Returns a formated now playing string.
 	 * @returns {Promise<String>}
 	 * @static
 	 * @method
 	 */
 	static async getNpString() {
-		let beatMap = OsuMemory.#gosuV1?.['menu']?.['bm'];
-		let metaData = beatMap?.['metadata'];
+		const menu = OsuMemory.#gosuV1?.['menu'];
+		if (!menu) {
+			/** menu is Undefined. */
+			return 'No map found.';
+		}
+		const beatMap = menu?.['bm'];
+		const metaData = beatMap?.['metadata'];
 		return `${metaData?.['artist']} - ${metaData?.['title']} [${metaData?.['difficulty']}] 
-        (${metaData?.['mapper']}, ${beatMap?.['stats']?.['fullSR']}*) https://osu.ppy.sh/b/${beatMap?.['id']}`;
+				(${metaData?.['mapper']}, ${beatMap?.['stats']?.['fullSR']}*) https://osu.ppy.sh/b/${beatMap?.['id']}`;
+	}
+
+	/**
+	 * Returns a formated now playing pp string.
+	 * @returns {Promise<String>}
+	 * @static
+	 * @method
+	 */
+	static async getNpppString() {
+		const menu = OsuMemory.#gosuV1?.['menu'];
+		if (!menu) {
+			/** menu is Undefined. */
+			return 'No map found.';
+		}
+		return ``;
 	}
 }
 

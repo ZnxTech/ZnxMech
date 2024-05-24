@@ -11,7 +11,7 @@
 import 'dotenv/config';
 import WebSocket from 'ws';
 import CommandManager from '../managers/commands.js';
-import * as Triggers from '../managers/triggers.js';
+import { Repost } from '../managers/triggers.js';
 import Database, { User, Channel } from '../database/database.js';
 import Twitch from './twitch.js';
 
@@ -211,7 +211,7 @@ export default class IrcClient {
 		console.log(event.toString());
 		if (!KnownBots.includes(event.userCName)) {
 			CommandManager.process(event); // Filter out known bots.
-			Triggers.Repost.process(event);
+			Repost.process(event);
 		}
 	}
 
