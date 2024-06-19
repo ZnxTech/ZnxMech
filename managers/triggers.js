@@ -9,6 +9,7 @@ import IrcClient, * as Irc from '../clients/irc.js';
 
 /**
  * Looks for link reposts in chat.
+ * TODO: Move repost data to db
  */
 export class Repost {
 	/**

@@ -127,7 +127,7 @@ export default class OsuMemory {
 		}
 		const beatMap = menu?.['bm'];
 		const metaData = beatMap?.['metadata'];
-		return `${metaData?.['artist']} - ${metaData?.['title']} [${metaData?.['difficulty']}] 
+		return `${metaData?.['artist']} - ${metaData?.['title']} [${metaData?.['difficulty']}] +${beatMap?.["mods"]?.["str"]} 
 				(${metaData?.['mapper']}, ${beatMap?.['stats']?.['fullSR']}*) https://osu.ppy.sh/b/${beatMap?.['id']}`;
 	}
 

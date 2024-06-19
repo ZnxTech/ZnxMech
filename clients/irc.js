@@ -132,7 +132,7 @@ export default class IrcClient {
 		}
 
 		if (IrcClient.#lastMessage == message) {
-			message += ' ⠀'; // trolling
+			message += '  '; // trolling - test char visability on linux/windows
 		}
 		IrcClient.#socket.send(`PRIVMSG #${channelName.toLowerCase()} :${message}`);
 		IrcClient.#lastMessage = message;
