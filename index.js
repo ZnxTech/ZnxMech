@@ -75,7 +75,7 @@ CommandManager.create(
 
 CommandManager.create(
 	{
-		triggers: ['part', 'leave'] ,
+		triggers: ['part', 'leave'],
 		rank: Rank.ADMIN
 	},
 	async (event, args) => {
@@ -193,7 +193,7 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['stoic'],
-		cooldown: 10* 1000
+		cooldown: 10 * 1000
 	},
 	async (event, args) => {
 		const request = await Axios.request({
@@ -203,7 +203,7 @@ CommandManager.create(
 		});
 		IrcClient.message(event.channel, request['data']['text']);
 	}
-)
+);
 
 // Help command
 CommandManager.create(
