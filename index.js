@@ -16,6 +16,7 @@ import Database, { Channel, User } from './database/database.js';
 
 import OsuMemory from './clients/osumemory.js';
 import { Sequelize, where } from 'sequelize';
+import Axios from 'axios';
 
 /**
  * Command definitions:
@@ -33,7 +34,7 @@ CommandManager.create(
 		args: {
 			offline: {
 				triggers: ['offline', 'o'],
-				isValued: false
+				hasValue: false
 			}
 		}
 	},
@@ -74,7 +75,7 @@ CommandManager.create(
 
 CommandManager.create(
 	{
-		triggers: ['part', 'leave'],
+		triggers: ['part', 'leave'] ,
 		rank: Rank.ADMIN
 	},
 	async (event, args) => {
@@ -154,7 +155,7 @@ CommandManager.create(
 		args: {
 			min: {
 				triggers: ['min', 'm'],
-				isValued: true
+				hasValue: true
 			}
 		}
 	},
@@ -188,6 +189,21 @@ CommandManager.create(
 		IrcClient.message(event.channel, `FeelsOkayMan Hey ${event.userCName}`);
 	}
 );
+
+CommandManager.create(
+	{
+		triggers: ['stoic'],
+		cooldown: 10* 1000
+	},
+	async (event, args) => {
+		const request = await Axios.request({
+			baseURL: 'https://stoic-quotes.com',
+			url: '/api/quote',
+			method: 'get'
+		});
+		IrcClient.message(event.channel, request['data']['text']);
+	}
+)
 
 // Help command
 CommandManager.create(

@@ -59,7 +59,7 @@ export default class CommandManager {
 	/**
 	 * @typedef {object} ArgSettings
 	 * @property {string[]} triggers - The argument triggers.
-	 * @property {boolean} isValued - Boolean of whether or not the argument has a value.
+	 * @property {boolean} hasValue - Boolean of whether or not the argument has a value.
 	 */
 
 	/**
@@ -235,7 +235,7 @@ export class Command {
 
 			/** Value assigning and splicing for main argument */
 			let value = null;
-			if (settings.isValued) {
+			if (settings.hasValue) {
 				// Argument has value, splice and assign.
 				value = words.splice(index, 2)[1];
 			} else {
