@@ -31,13 +31,10 @@ export class Repost {
 	 * @param {Irc.MessageEvent} event - Event to process.
 	 */
 	static async process(event) {
-		console.log('yep');
 		const index = event.message.indexOf('https://');
 		if (index == -1) {
 			return; // No link found.
 		}
-
-		console.log(index);
 
 		/** Grab all posts older then a day. */
 		const expPosts = await Posts.findAll({
@@ -50,19 +47,13 @@ export class Repost {
 			expPost.destroy();
 		}
 
-		console.log('yep 2');
-
 		/** Gets link string. */
 		const link = event.message.slice(index, event.message.indexOf(' ', index));
-
-		console.log(link);
 
 		const [post, built] = await Posts.findOrBuild({
 			where: { link: link },
 			defaults: { link: link, poster: event.userName, date: Date.now() }
 		});
-
-		console.log(built);
 
 		if (built) {
 			post.save();
