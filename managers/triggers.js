@@ -1,6 +1,8 @@
 // @ts-check
 
 import IrcClient, * as Irc from '../clients/irc.js';
+import { Posts } from '../database/database.js';
+import { Op } from 'sequelize';
 
 /**
  * Contains chat triggers.
@@ -28,31 +30,44 @@ export class Repost {
 	 * Processes an event and stores its data or replies to it.
 	 * @param {Irc.MessageEvent} event - Event to process.
 	 */
-	static process(event) {
+	static async process(event) {
+		console.log('yep');
 		const index = event.message.indexOf('https://');
 		if (index == -1) {
 			return; // No link found.
 		}
 
+		console.log(index);
+
+		/** Grab all posts older then a day. */
+		const expPosts = await Posts.findAll({
+			where: {
+				date: { [Op.lt]: Date.now() - 24 * 60 * 60 * 1000 }
+			}
+		});
+		/** Destroy all expired posts */
+		for (const expPost of expPosts) {
+			expPost.destroy();
+		}
+
+		console.log('yep 2');
+
 		/** Gets link string. */
 		const link = event.message.slice(index, event.message.indexOf(' ', index));
 
-		/** Checks if an obj exists for the channel, if not create one. */
-		if (!Repost.#posts[event.roomId]) {
-			Repost.#posts[event.roomId] = {};
-		}
+		console.log(link);
 
-		if (Object.keys(Repost.#posts[event.roomId]).includes(link)) {
-			const post = Repost.#posts[event.roomId][link];
-			if (event.userName != post.poster) {
-				IrcClient.message(event.channel, `IE Repost!`);
-				return; // Repost SHAME and exit process.
-			}
-		}
+		const [post, built] = await Posts.findOrBuild({
+			where: { link: link },
+			defaults: { link: link, poster: event.userName, date: Date.now() }
+		});
 
-		Object.assign(Repost.#posts[event.roomId], { [link]: { poster: event.userName, link: link } });
-		setTimeout(() => {
-			delete Repost.#posts[event.roomId][link];
-		}, 24 * 60 * 60 * 1000); // Check for reposts in 24h.
+		console.log(built);
+
+		if (built) {
+			post.save();
+		} else if (event.userName != post['poster']) {
+			IrcClient.message(event.channel, `IE Repost!`);
+		}
 	}
 }

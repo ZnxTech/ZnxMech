@@ -234,7 +234,7 @@ CommandManager.create(
 		cooldown: 10 * 1000
 	},
 	(event, args) => {
-		IrcClient.message(event.channel, `ta filter: r"!(message.content match r"^((ta|tuh) *)+.*$")"`);
+		IrcClient.message(event.channel, `ta filter: !(message.content match r"\\b(ta|tuh)\\b")`);
 	}
 );
 
@@ -245,7 +245,27 @@ CommandManager.create(
 		cooldown: 10 * 1000
 	},
 	(event, args) => {
-		IrcClient.message(event.channel, 'https://github.com/ZnxTech/ZnxMech');
+		IrcClient.message(event.channel, 'The ZnxMech repo: https://github.com/ZnxTech/ZnxMech');
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['fork', 'forkbomb'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, ':tf: :(){ :|:& }; :');
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['config', 'configs', 'dotfiles'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, 'My linux config files: https://github.com/ZnxTech/.config');
 	}
 );
 

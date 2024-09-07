@@ -93,8 +93,39 @@ Channel.init(
 	}
 );
 
+/**
+ *
+ */
+export class Posts extends Model {}
+/** Channels table def */
+Posts.init(
+	{
+		link: {
+			type: DataTypes.STRING,
+			primaryKey: true,
+			unique: true,
+			allowNull: false
+		},
+		poster: {
+			type: DataTypes.STRING(25),
+			unique: false,
+			allowNull: false
+		},
+		date: {
+			type: DataTypes.BIGINT,
+			unique: false,
+			allowNull: false
+		}
+	},
+	{
+		sequelize: Database,
+		modelName: 'Post',
+		timestamps: false
+	}
+);
+
 /** Sync with database on import */
-await Database.sync();
+await Database.sync({ alter: true });
 
 /** Export default */
 export default Database;

@@ -12,7 +12,7 @@
 		"url": "git+https://github.com/ZnxTech/ZnxMech.git"
 	},
 	"author": "Daniel \"Znx\" Levi",
-	"license": "ISC",
+	"license": "GPL-3.0-only",
 	"bugs": {
 		"url": "https://github.com/ZnxTech/ZnxMech/issues"
 	},

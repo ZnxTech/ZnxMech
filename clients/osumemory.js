@@ -27,7 +27,7 @@ export default class OsuMemory {
 	 * @type {boolean}
 	 * @static
 	 */
-	static #searching = true;
+	static #searching = false;
 
 	/**
 	 * The ws-v1 info object.
@@ -100,6 +100,7 @@ export default class OsuMemory {
 
 	/**
 	 * Sets the osu! memory searching state.
+	 * @param {boolean} state
 	 * @returns {Promise<void>}
 	 * @static
 	 * @method
@@ -127,7 +128,7 @@ export default class OsuMemory {
 		}
 		const beatMap = menu?.['bm'];
 		const metaData = beatMap?.['metadata'];
-		return `${metaData?.['artist']} - ${metaData?.['title']} [${metaData?.['difficulty']}] +${beatMap?.["mods"]?.["str"]} 
+		return `${metaData?.['artist']} - ${metaData?.['title']} [${metaData?.['difficulty']}] +${beatMap?.['mods']?.['str']} 
 				(${metaData?.['mapper']}, ${beatMap?.['stats']?.['fullSR']}*) https://osu.ppy.sh/b/${beatMap?.['id']}`;
 	}
 
