@@ -11,21 +11,8 @@ import { Op } from 'sequelize';
 
 /**
  * Looks for link reposts in chat.
- * TODO: Move repost data to db
  */
 export class Repost {
-	/**
-	 * @typedef {object} PostData
-	 * @property {string} poster - Username of poster.
-	 * @property {string} link - The link that the post included.
-	 */
-
-	/**
-	 * @type {Object<number, Object<string, PostData>>} posts - Object of all posts keyed by the room ID and then post link.
-	 * @static
-	 */
-	static #posts = {};
-
 	/**
 	 * Processes an event and stores its data or replies to it.
 	 * @param {Irc.MessageEvent} event - Event to process.
@@ -57,8 +44,31 @@ export class Repost {
 
 		if (built) {
 			post.save();
-		} else if (event.userName != post['poster']) {
-			IrcClient.message(event.channel, `IE Repost!`);
+			return; // Exit after, no need to check repost if the link is new.
+		}
+
+		if (event.userName != post['poster']) {
+			const timeStr = formatTimeString(Date.now() - post['date']);
+			IrcClient.message(event.channel, `/me IE Repost! this was already posted ${timeStr} ago!`);
 		}
 	}
+}
+
+/**
+ * Returns a formatted string (_h _m _s) from milliseconds.
+ * @param {number} milliseconds
+ * @returns {String}
+ */
+function formatTimeString(milliseconds) {
+	/** Get time values */
+	const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+	const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+	const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+
+	/** Format values */
+	const hoursStr = hours > 1 ? `${hours} hours` : hours > 0 ? `${hours} hour` : '';
+	const minutesStr = minutes > 1 ? `${minutes} minutes` : minutes > 0 ? `${minutes} minute` : '';
+	const secondsStr = seconds > 1 ? `${seconds} seconds` : seconds > 0 ? `${seconds} second` : '';
+
+	return `${hoursStr} ${minutesStr} ${secondsStr}`;
 }
