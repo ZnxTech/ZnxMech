@@ -20,7 +20,8 @@ export class Repost {
 	static async process(event) {
 		/** Gets link string. */
 		const index = event.message.indexOf('https://');
-		const indexEnd = event.message.indexOf(' ', index) != -1 ? event.message.indexOf(' ', index) : 0;
+		const indexSpace = event.message.indexOf(' ', index);
+		const indexEnd = indexSpace != -1 ? indexSpace : event.message.length;
 		const link = event.message.slice(index, indexEnd);
 		if (index == -1) {
 			return; // No link found.
@@ -41,6 +42,8 @@ export class Repost {
 			where: { link: link },
 			defaults: { link: link, poster: event.userName, date: Date.now() }
 		});
+
+		console.log(post['poster'], post['link']);
 
 		if (built) {
 			post.save();
@@ -69,6 +72,10 @@ function formatTimeString(milliseconds) {
 	const hoursStr = hours > 1 ? `${hours} hours` : hours > 0 ? `${hours} hour` : '';
 	const minutesStr = minutes > 1 ? `${minutes} minutes` : minutes > 0 ? `${minutes} minute` : '';
 	const secondsStr = seconds > 1 ? `${seconds} seconds` : seconds > 0 ? `${seconds} second` : '';
+
+	if (hours == 0 && minutes == 0 && seconds == 0) {
+		return '<1 seconds';
+	}
 
 	return `${hoursStr} ${minutesStr} ${secondsStr}`;
 }

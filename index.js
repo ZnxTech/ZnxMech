@@ -118,7 +118,12 @@ CommandManager.create(
 		rank: Rank.ADMIN
 	},
 	async (event, args) => {
-		const channels = await Channel.findAll({ where: { connected: true } });
+		const channels = await Channel.findAll({ where: { connected: 1 } });
+		let channelsStr = '';
+		for (const channel of channels) {
+			channelsStr += `${channel['name']}, `;
+		}
+		IrcClient.message(event.channel, `/me is connected to: ${channelsStr.slice(0, -2)}.`);
 	}
 );
 
