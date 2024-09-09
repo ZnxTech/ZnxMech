@@ -18,7 +18,10 @@ export class Repost {
 	 * @param {Irc.MessageEvent} event - Event to process.
 	 */
 	static async process(event) {
+		/** Gets link string. */
 		const index = event.message.indexOf('https://');
+		const indexEnd = event.message.indexOf(' ', index) != -1 ? event.message.indexOf(' ', index) : 0;
+		const link = event.message.slice(index, indexEnd);
 		if (index == -1) {
 			return; // No link found.
 		}
@@ -33,9 +36,6 @@ export class Repost {
 		for (const expPost of expPosts) {
 			expPost.destroy();
 		}
-
-		/** Gets link string. */
-		const link = event.message.slice(index, event.message.indexOf(' ', index));
 
 		const [post, built] = await Posts.findOrBuild({
 			where: { link: link },
