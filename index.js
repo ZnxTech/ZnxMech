@@ -15,8 +15,19 @@ import CommandManager, { Rank } from './managers/commands.js';
 import Database, { Channel, User } from './database/database.js';
 
 import OsuMemory from './clients/osumemory.js';
+import FileSystem from 'fs';
 import { Sequelize, where } from 'sequelize';
 import Axios from 'axios';
+
+/**
+ * preload assets:
+ * ---------------
+ */
+
+/**
+ * @type {String[]} gtnhTips - an array of all menu tips from GTNH.
+ */
+const gtnhTips = FileSystem.readFileSync('./resources/gtnhtips.txt').toString().split('\n');
 
 /**
  * Command definitions:
@@ -118,7 +129,7 @@ CommandManager.create(
 		rank: Rank.ADMIN
 	},
 	async (event, args) => {
-		const channels = await Channel.findAll({ where: { connected: 1 } });
+		const channels = await Channel.findAll({ where: { connected: true } });
 		let channelsStr = '';
 		for (const channel of channels) {
 			channelsStr += `${channel['name']}, `;
@@ -180,21 +191,6 @@ CommandManager.create(
 	}
 );
 
-/**
- * Text only commands:
- */
-
-// Mainly for testing
-CommandManager.create(
-	{
-		triggers: ['hey', 'hello', 'hi'],
-		cooldown: 10 * 1000
-	},
-	(event, args) => {
-		IrcClient.message(event.channel, `FeelsOkayMan Hey ${event.userCName}`);
-	}
-);
-
 CommandManager.create(
 	{
 		triggers: ['stoic'],
@@ -207,6 +203,75 @@ CommandManager.create(
 			method: 'get'
 		});
 		IrcClient.message(event.channel, request['data']['text']);
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['dtar'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		let AR;
+		if (args.main.triggered) {
+			AR = Number(args.main.value);
+		} else {
+			return;
+		}
+
+		if (typeof AR == 'number' && !isNaN(AR)) {
+			// calc visible object time
+			let preempt;
+			if (AR < 5) {
+				preempt = 1200 + (600 * (5 - AR)) / 5;
+			} else {
+				preempt = 1200 - (750 * (AR - 5)) / 5;
+			}
+
+			// apply doubletime speed
+			preempt /= 1.5;
+
+			// reverse calc to approach rate
+			let DTAR;
+			if (preempt > 1200) {
+				DTAR = 5 - (5 * (preempt - 1200)) / 600;
+			} else {
+				DTAR = 5 - (5 * (preempt - 1200)) / 750;
+			}
+
+			IrcClient.message(event.channel, `/me AR ${AR} with DT is AR ${DTAR.toFixed(3)}`);
+		} else {
+			IrcClient.message(event.channel, `/me not a valid AR number.`);
+		}
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['tip', 'gtnhtip', 'gregtip'],
+		cooldown: 10 * 1000
+	},
+	async (event, args) => {
+		// fetch a random tip from array.
+		const tipNumber = Math.floor(Math.random() * gtnhTips.length);
+		const tipString = gtnhTips[tipNumber];
+
+		IrcClient.message(event.channel, `/me ${tipString}`);
+	}
+);
+
+/**
+ * Text commands:
+ */
+
+// Mainly for testing
+CommandManager.create(
+	{
+		triggers: ['hey', 'hello', 'hi'],
+		cooldown: 10 * 1000
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, `FeelsOkayMan Hey ${event.userCName}`);
 	}
 );
 
@@ -274,10 +339,6 @@ CommandManager.create(
 	}
 );
 
-/**
- * GregTech/Own Channel Commands:
- */
-
 CommandManager.create(
 	{
 		triggers: ['prism', 'prismlauncher', 'getprism'],
@@ -298,20 +359,6 @@ CommandManager.create(
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, 'Angelica (Forge 1.7.10 Sodium): https://github.com/GTNewHorizons/Angelica');
-	}
-);
-
-CommandManager.create(
-	{
-		triggers: ['gregtech', 'gtnh', 'greg'],
-		cooldown: 10 * 1000
-	},
-	async (event, args) => {
-		IrcClient.message(
-			event.channel,
-			`GregTech is a technology and chemistry mod focused on realistic crafting process chains: https://gregtech.overminddl1.com/ 
-			GTNH is a modpack based on GregTech-5U that takes around 7k-10k hours to finish (StarGate tier): https://github.com/GTNewHorizons/GT-New-Horizons-Modpack`
-		);
 	}
 );
 

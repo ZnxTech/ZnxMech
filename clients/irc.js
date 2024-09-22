@@ -15,7 +15,18 @@ import { Repost } from '../managers/triggers.js';
 import Database, { User, Channel } from '../database/database.js';
 import Twitch from './twitch.js';
 
-const KnownBots = ['StreamElements', 'FossaBot', 'l3lackshark', 'sheppsubot', 'PogpegaBot', 'ZnxMech'];
+const KnownBots = [
+	'StreamElements',
+	'FossaBot',
+	'Nightbot',
+	'l3lackshark',
+	'Supibot',
+	'sheppsubot',
+	'PogpegaBot',
+	'ZnxMech',
+	'prodchayBOT',
+	'TitleChange_Bot'
+];
 
 /**
  *
@@ -50,7 +61,7 @@ export default class IrcClient {
 	 */
 	static async connect() {
 		return new Promise((resolve, reject) => {
-			let socket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+			const socket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
 			/** OnOpen function */
 			socket.onopen = (event) => {
@@ -63,12 +74,13 @@ export default class IrcClient {
 			/** OnMessage function */
 			socket.onmessage = (event) => {
 				const data = event.data;
-				if (typeof data == 'string') {
-					const strings = data.slice(0, data.lastIndexOf('\r\n')).split('\r\n'); // '\r\n' spliting tomfoolery
-					for (const string of strings) {
-						let eventObj = Event.create(string);
-						IrcClient.onEvent(eventObj);
-					}
+				if (typeof data != 'string') {
+					return;
+				}
+				const strings = data.slice(0, data.lastIndexOf('\r\n')).split('\r\n'); // '\r\n' spliting tomfoolery
+				for (const string of strings) {
+					const eventObj = Event.create(string);
+					IrcClient.onEvent(eventObj);
 				}
 			};
 		});
@@ -127,12 +139,13 @@ export default class IrcClient {
 			// Channel is offline only, check for if the channel is live.
 			const response = await Twitch.getStreams({ user_id: id });
 			if (response?.data.data[0]) {
+				// data[0] is null when the channel is offline.
 				return; // Channel is live, exit process.
 			}
 		}
 
 		if (IrcClient.#lastMessage == message) {
-			message += '  '; // trolling - test char visability on linux/windows
+			message += '  '; // trolling
 		}
 		IrcClient.#socket.send(`PRIVMSG #${channelName.toLowerCase()} :${message}`);
 		IrcClient.#lastMessage = message;
@@ -155,7 +168,7 @@ export default class IrcClient {
 
 	/**
 	 * The function to trigger when reciving an event from the IRC,
-	 * currently only filters event to their type specific trigger functions.
+	 * currently only filters events to their type specific trigger functions.
 	 * @param {Event} event - The event recived from the IRC.
 	 * @returns {void}
 	 * @static
@@ -253,7 +266,7 @@ export default class IrcClient {
 		console.log('IRC reconnecting');
 		// try to reconnect after 5 seconds
 		setTimeout(async () => {
-			let socket = await IrcClient.connect();
+			const socket = await IrcClient.connect();
 			IrcClient.#socket.close();
 			IrcClient.#socket = socket;
 			// get all connected channels from db

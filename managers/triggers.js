@@ -14,6 +14,16 @@ import { Op } from 'sequelize';
  */
 export class Repost {
 	/**
+	 * List of website cnames.
+	 * @type {string[][]}
+	 */
+	static cnames = [
+		['youtube.com', 'youtu.be'],
+		['reddit.com', 'safereddit.com'],
+		['twitter.com', 'x.com', 'fxtwitter.com', 'vxtwitter.com']
+	];
+
+	/**
 	 * Processes an event and stores its data or replies to it.
 	 * @param {Irc.MessageEvent} event - Event to process.
 	 */
@@ -46,7 +56,7 @@ export class Repost {
 		console.log(post['poster'], post['link']);
 
 		if (built) {
-			post.save();
+			await post.save();
 			return; // Exit after, no need to check repost if the link is new.
 		}
 
@@ -58,7 +68,7 @@ export class Repost {
 }
 
 /**
- * Returns a formatted string (_h _m _s) from milliseconds.
+ * Returns a formatted string from milliseconds (x hours y minutes z seconds).
  * @param {number} milliseconds
  * @returns {String}
  */
