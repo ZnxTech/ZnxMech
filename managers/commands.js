@@ -137,7 +137,7 @@ export default class CommandManager {
 			/** Command has all the requirements to continue */
 
 			/** Check if to set a cooldown */
-			if (command.cooldown > 0) {
+			if (command.cooldown > 0 && Rank.ADMIN > (user?.['rank'] ?? Rank.DEFAULT)) {
 				// Set a cooldown.
 				command.setCooldown(event.roomId, event.userId);
 			}
