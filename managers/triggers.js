@@ -53,8 +53,6 @@ export class Repost {
 			defaults: { link: link, poster: event.userName, date: Date.now() }
 		});
 
-		console.log(post['poster'], post['link']);
-
 		if (built) {
 			await post.save();
 			return; // Exit after, no need to check repost if the link is new.
@@ -62,7 +60,7 @@ export class Repost {
 
 		if (event.userName != post['poster']) {
 			const timeStr = formatTimeString(Date.now() - post['date']);
-			IrcClient.message(event.channel, `/me IE Repost! this was already posted ${timeStr} ago!`);
+			IrcClient.message(event.channel, `/me IE Repost! this was posted ${timeStr} ago!`);
 		}
 	}
 }
