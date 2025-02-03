@@ -13,6 +13,7 @@ import Twitch from './clients/twitch.js';
 
 import CommandManager, { Rank } from './managers/commands.js';
 import Database, { Channel, User } from './database/database.js';
+import { formatTimeString } from './managers/triggers.js';
 
 import OsuMemory from './clients/osumemory.js';
 import FileSystem from 'fs';
@@ -125,6 +126,122 @@ CommandManager.create(
 
 CommandManager.create(
 	{
+		triggers: ['rank', 'r'],
+		rank: Rank.OWNER,
+		args: {
+			name: {
+				triggers: ['name', 'n'],
+				hasValue: true
+			},
+			id: {
+				triggers: ['id', 'i'],
+				hasValue: true
+			}
+		}
+	},
+	async (event, args) => {
+		let rank = 0;
+
+		if (args.main.triggered) {
+			switch (args.main.value) {
+				case 'banned':
+				case '-1':
+					rank = -1;
+					break;
+
+				case 'default':
+				case '0':
+					rank = 0;
+					break;
+
+				case 'trusted':
+				case '1':
+					rank = 1;
+					break;
+
+				case 'admin':
+				case '2':
+					rank = 2;
+					break;
+
+				default:
+					return;
+			}
+		}
+
+		if (args.name?.triggered) {
+			const userApi = await Twitch.getUsers({ login: args.name?.value ?? '' });
+			const userId = userApi?.data.data[0]?.id;
+			if (!userId) {
+				return;
+			}
+
+			const [user, built] = await User.findOrBuild({
+				where: { name: args.name?.value },
+				defaults: { id: userId }
+			});
+
+			if (user['rank'] >= Rank.ADMIN) return; // User is admin/owner, dont change.
+			if (user['rank'] != Rank.OWNER && rank >= Rank.ADMIN) return; // User isnt owner, dont change.
+
+			user['rank'] = rank;
+			await user.save();
+		} else if (args.id?.triggered) {
+			const userApi = await Twitch.getUsers({ if: args.id?.value ?? '0' });
+			const userName = userApi?.data.data[0]?.login;
+			if (!userName) {
+				return;
+			}
+
+			const [user, built] = await User.findOrBuild({
+				where: { id: args.id?.value },
+				defaults: { name: userName }
+			});
+
+			if (user['rank'] >= Rank.ADMIN) return; // User is admin/owner, dont change.
+			if (user['rank'] != Rank.OWNER && rank >= Rank.ADMIN) return; // User isnt owner, dont change.
+
+			user['rank'] = rank;
+			await user.save();
+		}
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['changecd', 'ccd'],
+		rank: Rank.ADMIN,
+		args: {
+			time: {
+				triggers: ['time', 't'],
+				hasValue: true
+			},
+			remove: {
+				triggers: ['remove', 'r'],
+				hasValue: false
+			}
+		}
+	},
+	(event, args) => {
+		if (!args.main.triggered) return;
+		const command = CommandManager.getCommand(args.main.value ?? '');
+
+		if (!command) return;
+		if (args.remove?.triggered) {
+			command.cooldown = 0;
+			return;
+		}
+
+		if (args.time?.triggered) {
+			const cooldown = Number(args.time?.value);
+			if (isNaN(cooldown)) return;
+			command.cooldown = cooldown;
+		}
+	}
+);
+
+CommandManager.create(
+	{
 		triggers: ['channels', 'connected'],
 		rank: Rank.ADMIN
 	},
@@ -148,6 +265,36 @@ CommandManager.create(
 	}
 );
 
+CommandManager.create(
+	{
+		triggers: ['kill'],
+		rank: Rank.ADMIN
+	},
+	(event, args) => {
+		process.exit();
+	}
+);
+
+CommandManager.create(
+	{
+		triggers: ['fish', 'f'],
+		cooldown: 1047000,
+		gamewhitelist: ['LurkBait Twitch Fishing'],
+		rank: Rank.DEFAULT
+	},
+	(event, args) => {
+		IrcClient.message(event.channel, `!fish @${args.main.triggered ? args.main.value : event.userCName}`);
+	},
+	(event, args) => {
+		const command = CommandManager.getCommand('fish');
+		const remainder = command?.getCooldownRemainder(event.roomId, event.userId) ?? 0;
+		IrcClient.message(
+			event.channel,
+			`@${event.userCName} Your next $fish is in ${formatTimeString(remainder)}. Fishge`
+		);
+	}
+);
+
 /**
  * Main Commands
  */
@@ -168,6 +315,7 @@ CommandManager.create(
 	{
 		triggers: ['roll', 'r'],
 		cooldown: 1 * 1000,
+		blacklist: ['btmc'],
 		args: {
 			min: {
 				triggers: ['min', 'm'],
@@ -194,7 +342,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['stoic'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	async (event, args) => {
 		const request = await Axios.request({
@@ -209,7 +358,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['dtar'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		let AR;
@@ -239,9 +389,9 @@ CommandManager.create(
 				DTAR = 5 - (5 * (preempt - 1200)) / 750;
 			}
 
-			IrcClient.message(event.channel, `/me AR ${AR} with DT is AR ${DTAR.toFixed(3)}`);
+			IrcClient.message(event.channel, `AR ${AR} with DT is AR ${DTAR.toFixed(3)}`);
 		} else {
-			IrcClient.message(event.channel, `/me not a valid AR number.`);
+			IrcClient.message(event.channel, `not a valid AR number.`);
 		}
 	}
 );
@@ -249,26 +399,28 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['tip', 'gtnhtip', 'gregtip'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	async (event, args) => {
 		// fetch a random tip from array.
 		const tipNumber = Math.floor(Math.random() * gtnhTips.length);
 		const tipString = gtnhTips[tipNumber];
 
-		IrcClient.message(event.channel, `/me ${tipString}`);
+		IrcClient.message(event.channel, `${tipString}`);
 	}
 );
 
-/**
- * Text commands:
- */
+// /**
+//  * Text commands:
+//  */
 
 // Mainly for testing
 CommandManager.create(
 	{
 		triggers: ['hey', 'hello', 'hi'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, `FeelsOkayMan Hey ${event.userCName}`);
@@ -279,7 +431,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['help', 'h'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, 'Idk read this https://github.com/ZnxTech/ZnxMech/blob/main/index.js');
@@ -290,7 +443,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['tasty'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, `Tasty`);
@@ -301,7 +455,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['fuckta'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, `ta filter: !(message.content match r"\\b(ta|tuh)\\b")`);
@@ -312,7 +467,7 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['source', 'sourcecode', 'repo', 'git'],
-		cooldown: 10 * 1000
+		cooldown: 30 * 1000
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, 'The ZnxMech repo: https://github.com/ZnxTech/ZnxMech');
@@ -322,7 +477,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['fork', 'forkbomb'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, ':tf: :(){ :|:& }; :');
@@ -332,7 +488,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['config', 'configs', 'dotfiles'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, 'My linux config files: https://github.com/ZnxTech/.config');
@@ -342,7 +499,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['prism', 'prismlauncher', 'getprism'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	async (event, args) => {
 		IrcClient.message(
@@ -355,7 +513,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['angelica'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	(event, args) => {
 		IrcClient.message(event.channel, 'Angelica (Forge 1.7.10 Sodium): https://github.com/GTNewHorizons/Angelica');
@@ -365,7 +524,8 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['key', 'apikey', 'curseforgekey'],
-		cooldown: 10 * 1000
+		cooldown: 10 * 1000,
+		blacklist: ['btmc']
 	},
 	async (event, args) => {
 		IrcClient.message(

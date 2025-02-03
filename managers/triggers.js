@@ -37,6 +37,10 @@ export class Repost {
 			return; // No link found.
 		}
 
+		if (link.includes('twitch.tv/btmc')) {
+			return;
+		}
+
 		/** Grab all posts older then a day. */
 		const expPosts = await Posts.findAll({
 			where: {
@@ -70,7 +74,7 @@ export class Repost {
  * @param {number} milliseconds
  * @returns {String}
  */
-function formatTimeString(milliseconds) {
+export function formatTimeString(milliseconds) {
 	/** Get time values */
 	const hours = Math.floor(milliseconds / (1000 * 60 * 60));
 	const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));

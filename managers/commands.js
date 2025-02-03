@@ -69,21 +69,39 @@ export default class CommandManager {
 	 * @property {Rank} [rank = Rank.DEFAULT] - The rank value that is required to call the command.
 	 * @property {string[]} [whitelist = []] - A simple command whitelist.
 	 * @property {string[]} [blacklist = []] - A simple command blacklist.
+	 * @property {string[]} [gamewhitelist = []] - A game category command whitelist.
+	 * @property {string[]} [gameblacklist = []] - A game category command blacklist.
 	 * @property {number} [cooldown = 0] - The time in miliseconds that the user needs to wait until they can call the command again.
 	 */
 
 	/**
 	 * A function that adds the function/method the the manager's commands array.
-	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
 	 * @param {CommandSettings} settings - The command settings.
+	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
+	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} [cdcallback = () => {}] - The function to callback when the command is on cooldown.
 	 * @returns {void}
 	 * @static
 	 * @method
 	 */
-	static create(settings, callback) {
+	static create(settings, callback, cdcallback) {
 		/** Create command object */
-		const command = new Command(settings, callback);
+		const command = new Command(settings, callback, cdcallback);
 		CommandManager.#commands.push(command);
+	}
+
+	/**
+	 * A function that returns a command matching to the trigger given.
+	 * @param {string} commandTrigger - the trigger of the command.
+	 * @returns {Command|null}
+	 */
+	static getCommand(commandTrigger) {
+		for (const command of CommandManager.#commands) {
+			if (command.triggers.some((trigger) => commandTrigger == trigger)) {
+				return command;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -105,6 +123,8 @@ export default class CommandManager {
 
 			/** Check for command cooldowns */
 			if (command.isCooldown(event.roomId, event.userId)) {
+				const args = command.getArguments(words);
+				command.cdcallback(event, args);
 				return; // User is under cooldown for this command, exit process.
 			}
 
@@ -115,6 +135,19 @@ export default class CommandManager {
 
 			/** Check for blacklist */
 			if (command.blacklist.includes(event.channel)) {
+				return; // Channel is in the blacklist.
+			}
+
+			const channelInfo = await Twitch.getChannelInfo({ broadcaster_id: event.roomId });
+			const channelGame = channelInfo?.data.data[0]?.['game_name'] ?? '';
+
+			/** Check for game whitelist */
+			if (command.gamewhitelist.length != 0 && !command.gamewhitelist.includes(channelGame)) {
+				return; // Channel is not in the existing whitelist.
+			}
+
+			/** Check for game blacklist */
+			if (command.gameblacklist.includes(channelGame)) {
 				return; // Channel is in the blacklist.
 			}
 
@@ -137,7 +170,7 @@ export default class CommandManager {
 			/** Command has all the requirements to continue */
 
 			/** Check if to set a cooldown */
-			if (command.cooldown > 0 && Rank.ADMIN > (user?.['rank'] ?? Rank.DEFAULT)) {
+			if (command.cooldown > 0) {
 				// Set a cooldown.
 				command.setCooldown(event.roomId, event.userId);
 			}
@@ -157,15 +190,21 @@ export default class CommandManager {
  */
 export class Command {
 	/**
-	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
 	 * @param {CommandSettings} settings - The command settings.
+	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
+	 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} cdcallback - The function to callback when the command is on cooldown.
 	 * @constructor
 	 */
-	constructor(settings, callback) {
+	constructor(settings, callback, cdcallback = () => {}) {
 		/**
 		 * @type {function(Irc.MessageEvent, Object<string, ArgResult>): void} callback - The function to callback when the command is triggered.
 		 */
 		this.callback = callback;
+
+		/**
+		 * @param {function(Irc.MessageEvent, Object<string, ArgResult>): void} cdcallback - The function to callback when the command is on cooldown.
+		 */
+		this.cdcallback = cdcallback;
 
 		/**
 		 * @type {string[]} triggers - The name/s to look for to cause the command to trigger.
@@ -191,6 +230,16 @@ export class Command {
 		 * @property {string[]} blacklist - a simple command blacklist.
 		 */
 		this.blacklist = settings.blacklist ?? [];
+
+		/**
+		 * @property {string[]} gamewhitelist - a game category command whitelist.
+		 */
+		this.gamewhitelist = settings.gamewhitelist ?? [];
+
+		/**
+		 * @property {string[]} gameblacklist - a game category command blacklist.
+		 */
+		this.gameblacklist = settings.gameblacklist ?? [];
 
 		/**
 		 * @type {number} cooldown - The time in miliseconds that the user needs to wait until they can call the command again.
@@ -248,7 +297,7 @@ export class Command {
 
 		/** Assign main string argument */
 		const main = words.slice(1).join(' '); // Cut command trigger off and join to string
-		Object.assign(args, { main: { triggered: !!main, value: main ? main : null } });
+		Object.assign(args, { main: { triggered: !!(main && main != '󠀀'), value: main && main != '󠀀' ? main : null } });
 
 		return args;
 	}
@@ -262,7 +311,36 @@ export class Command {
 	 * @method
 	 */
 	isCooldown(roomId, userId) {
-		return this.cooldowns[roomId]?.[userId] ?? false;
+		if (!this.cooldowns[roomId]?.[userId]) {
+			return false;
+		} else {
+			return !(this.cooldowns[roomId]?.[userId] + this.cooldown < Date.now());
+		}
+	}
+
+	/**
+	 * Returns the time the cooldown was set for the user in the room.
+	 * if user cooldown does not exist, assume not and return {Date.now()}.
+	 * @param {number} roomId - The id of the channel/room.
+	 * @param {number} userId - The id of the user.
+	 * @returns {number} The time the cooldown was set.
+	 * @method
+	 */
+	getCooldown(roomId, userId) {
+		return this.cooldowns[roomId]?.[userId] ?? Date.now();
+	}
+
+	/**
+	 * Returns the time the cooldown was set for the user in the room.
+	 * if user cooldown does not exist, assume not and return {Date.now()}.
+	 * @param {number} roomId - The id of the channel/room.
+	 * @param {number} userId - The id of the user.
+	 * @returns {number} The time the cooldown was set.
+	 * @method
+	 */
+	getCooldownRemainder(roomId, userId) {
+		const deltaTime = Date.now() - (this.cooldowns[roomId]?.[userId] ?? Date.now());
+		return this.cooldown - deltaTime;
 	}
 
 	/**
@@ -278,9 +356,6 @@ export class Command {
 		if (!this.cooldowns[roomId]) {
 			this.cooldowns[roomId] = {};
 		}
-		this.cooldowns[roomId][userId] = true;
-		setTimeout(() => {
-			this.cooldowns[roomId][userId] = false;
-		}, this.cooldown);
+		this.cooldowns[roomId][userId] = Date.now();
 	}
 }
