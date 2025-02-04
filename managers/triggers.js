@@ -1,6 +1,7 @@
 // @ts-check
 
 import IrcClient, * as Irc from '../clients/irc.js';
+import Twitch from '../clients/twitch.js';
 import { Posts } from '../database/database.js';
 import { Op } from 'sequelize';
 
@@ -63,6 +64,12 @@ export class Repost {
 		}
 
 		if (event.userName != post['poster']) {
+			const response = await Twitch.getStreams({ user_id: event.roomId });
+			if (response?.data.data[0]) {
+				// data[0] is null when the channel is offline.
+				return; // Channel is live, exit process.
+			}
+
 			const timeStr = formatTimeString(Date.now() - post['date']);
 			IrcClient.message(event.channel, `/me IE Repost! this was posted ${timeStr} ago!`);
 		}
