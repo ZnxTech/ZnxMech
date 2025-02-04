@@ -278,12 +278,16 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['fish', 'f'],
-		cooldown: 1047000,
+		cooldown: 20 * 60 * 1000,
 		gamewhitelist: ['LurkBait Twitch Fishing'],
 		rank: Rank.DEFAULT
 	},
 	(event, args) => {
-		IrcClient.message(event.channel, `!fish @${args.main.triggered ? args.main.value : event.userCName}`);
+		let userCName = args.main.triggered ? args.main.value : event.userCName;
+		if (userCName?.[0] == '@') {
+			userCName = userCName.slice(1);
+		}
+		IrcClient.message(event.channel, `!fish @${userCName}`);
 	},
 	(event, args) => {
 		const command = CommandManager.getCommand('fish');
