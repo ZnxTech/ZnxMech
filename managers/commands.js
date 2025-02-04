@@ -121,13 +121,6 @@ export default class CommandManager {
 				continue; // Event message doesnt contain current command, move to the next one.
 			}
 
-			/** Check for command cooldowns */
-			if (command.isCooldown(event.roomId, event.userId)) {
-				const args = command.getArguments(words);
-				command.cdcallback(event, args);
-				return; // User is under cooldown for this command, exit process.
-			}
-
 			/** Check for whitelist */
 			if (command.whitelist.length != 0 && !command.whitelist.includes(event.channel)) {
 				return; // Channel is not in the existing whitelist.
@@ -139,7 +132,7 @@ export default class CommandManager {
 			}
 
 			const channelInfo = await Twitch.getChannelInfo({ broadcaster_id: event.roomId });
-			const channelGame = channelInfo?.data.data[0]?.['game_name'] ?? '';
+			const channelGame = channelInfo?.data.data[0]?.['game_name'];
 
 			/** Check for game whitelist */
 			if (command.gamewhitelist.length != 0 && !command.gamewhitelist.includes(channelGame)) {
@@ -149,6 +142,13 @@ export default class CommandManager {
 			/** Check for game blacklist */
 			if (command.gameblacklist.includes(channelGame)) {
 				return; // Channel is in the blacklist.
+			}
+
+			/** Check for command cooldowns */
+			if (command.isCooldown(event.roomId, event.userId)) {
+				const args = command.getArguments(words);
+				command.cdcallback(event, args);
+				return; // User is under cooldown for this command, exit process.
 			}
 
 			/** Check for command permissions */
