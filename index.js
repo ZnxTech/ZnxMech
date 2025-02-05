@@ -126,7 +126,7 @@ CommandManager.create(
 
 CommandManager.create(
 	{
-		triggers: ['rank', 'r'],
+		triggers: ['rank'],
 		rank: Rank.OWNER,
 		args: {
 			name: {
@@ -143,7 +143,7 @@ CommandManager.create(
 		let rank = 0;
 
 		if (args.main.triggered) {
-			switch (args.main.value) {
+			switch (args.main.value?.toLowerCase()) {
 				case 'banned':
 				case '-1':
 					rank = -1;
@@ -170,39 +170,40 @@ CommandManager.create(
 		}
 
 		if (args.name?.triggered) {
-			const userApi = await Twitch.getUsers({ login: args.name?.value ?? '' });
-			const userId = userApi?.data.data[0]?.id;
+			const userName = args.name?.value?.toLowerCase();
+			const userId = (await Twitch.getUsers({ login: userName }))?.data.data[0]?.id;
 			if (!userId) {
 				return;
 			}
 
 			const [user, built] = await User.findOrBuild({
-				where: { name: args.name?.value },
-				defaults: { id: userId }
+				where: { name: userName },
+				defaults: { id: userId, rank: 0, points: 0 }
 			});
 
 			if (user['rank'] >= Rank.ADMIN) return; // User is admin/owner, dont change.
-			if (user['rank'] != Rank.OWNER && rank >= Rank.ADMIN) return; // User isnt owner, dont change.
 
 			user['rank'] = rank;
 			await user.save();
-		} else if (args.id?.triggered) {
-			const userApi = await Twitch.getUsers({ if: args.id?.value ?? '0' });
-			const userName = userApi?.data.data[0]?.login;
+			return;
+		}
+
+		if (args.id?.triggered) {
+			const userName = (await Twitch.getUsers({ id: args.id?.value }))?.data.data[0]?.login;
 			if (!userName) {
 				return;
 			}
 
 			const [user, built] = await User.findOrBuild({
 				where: { id: args.id?.value },
-				defaults: { name: userName }
+				defaults: { name: userName, rank: 0, points: 0 }
 			});
 
 			if (user['rank'] >= Rank.ADMIN) return; // User is admin/owner, dont change.
-			if (user['rank'] != Rank.OWNER && rank >= Rank.ADMIN) return; // User isnt owner, dont change.
 
 			user['rank'] = rank;
 			await user.save();
+			return;
 		}
 	}
 );
