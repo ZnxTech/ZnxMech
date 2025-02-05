@@ -176,12 +176,15 @@ CommandManager.create(
 				return;
 			}
 
+			const admin = await User.findByPk(event.userId);
 			const [user, built] = await User.findOrBuild({
 				where: { name: userName },
-				defaults: { id: userId, rank: 0, points: 0 }
+				defaults: { id: userId }
 			});
 
-			if (user['rank'] >= Rank.ADMIN) return; // User is admin/owner, dont change.
+			// User trying to change a rank of someone equal or higher rank then them,
+			// and or changing soneone to a rank equal or higher rank than themselfs.
+			if (user['rank'] >= admin?.['rank'] || rank >= admin?.['rank']) return;
 
 			user['rank'] = rank;
 			await user.save();
@@ -189,17 +192,21 @@ CommandManager.create(
 		}
 
 		if (args.id?.triggered) {
-			const userName = (await Twitch.getUsers({ id: args.id?.value }))?.data.data[0]?.login;
+			const userId = args.id?.value;
+			const userName = (await Twitch.getUsers({ id: userId }))?.data.data[0]?.login;
 			if (!userName) {
 				return;
 			}
 
+			const admin = await User.findByPk(event.userId);
 			const [user, built] = await User.findOrBuild({
-				where: { id: args.id?.value },
-				defaults: { name: userName, rank: 0, points: 0 }
+				where: { id: userId },
+				defaults: { name: userName }
 			});
 
-			if (user['rank'] >= Rank.ADMIN) return; // User is admin/owner, dont change.
+			// User trying to change a rank of someone equal or higher rank then them,
+			// and or changing soneone to a rank equal or higher rank than themselfs.
+			if (user['rank'] >= admin?.['rank'] || rank >= admin?.['rank']) return;
 
 			user['rank'] = rank;
 			await user.save();
