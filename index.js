@@ -443,11 +443,10 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['help', 'h'],
-		cooldown: 10 * 1000,
-		blacklist: ['btmc']
+		cooldown: 10 * 1000
 	},
 	(event, args) => {
-		IrcClient.message(event.channel, 'Idk read this https://github.com/ZnxTech/ZnxMech/blob/main/index.js');
+		IrcClient.message(event.channel, `@${event.userCName} https://pastebin.com/raw/dv5a22fa`);
 	}
 );
 
