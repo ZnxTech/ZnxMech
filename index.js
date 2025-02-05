@@ -251,7 +251,7 @@ CommandManager.create(
 CommandManager.create(
 	{
 		triggers: ['channels', 'connected'],
-		rank: Rank.ADMIN
+		rank: Rank.TRUSTED
 	},
 	async (event, args) => {
 		const channels = await Channel.findAll({ where: { connected: true } });
